@@ -11,12 +11,13 @@ const
 
 
 class MangadexDownloader {
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, lang = "gb"}={}) {
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, lang = "gb", group = 0}={}) {
         this.mangaId = mangaId;
         this.dir = dir;
         this.firstChapter = firstChapter;
         this.lastChapter = lastChapter;
         this.lang = lang;
+        this.group = group
     }
 
     set mangaId(id) {
@@ -37,6 +38,10 @@ class MangadexDownloader {
 
     set lang(l) {
         this._lang = l;
+    }
+
+    set group(g) {
+        this._group = parseInt(g);
     }
 
     async download() {
@@ -74,8 +79,8 @@ class MangadexDownloader {
 
         for(let id of chapIds) {
             const chap = await Mangadex.getChapter(id);
-            console.log(`Chapter ${chap.chapter} data acquired.`)
-            const urls = chap.page_array
+            console.log(`Chapter ${chap.chapter} data acquired.`);
+            const urls = chap.page_array;
             chapUrls[parseFloat(chap.chapter)] = urls;
         }
         return chapUrls;
@@ -83,13 +88,18 @@ class MangadexDownloader {
 
     async _getChapId() {
         console.log("Acquiring manga data...");
-        const manga = await Mangadex.getManga(this._mangaId);
+        let manga = await Mangadex.getManga(this._mangaId);
         console.log("Manga data acquired.");
         console.log(`Manga name: ${manga.manga.title}.`)
     
-        const chaps = manga.chapter;
+        let chaps = manga.chapter;
+
+        if(this._group) 
+            chaps = chaps.filter(chap => chap.group_id === this._group || chap.group_id_2 === this._group || chap.group_id_3 === this._group);
+
         return chaps.filter(chap => chap.lang_code === this._lang)
-                       .map(chap => chap.id);
+                    .map(chap => chap.id);
+
     }    
 
     _zipChapters() {
