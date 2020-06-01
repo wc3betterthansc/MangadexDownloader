@@ -11,6 +11,11 @@ const
 
 
 class MangadexDownloader {
+
+    /**
+     * 
+     * @param {number} mangaId 
+     */
     constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, lang = "gb", group = 0}={}) {
         this.mangaId = mangaId;
         this.dir = dir;
@@ -50,26 +55,24 @@ class MangadexDownloader {
         if(!fs.existsSync(this._dir)) fs.mkdirSync(this._dir,{recursive: true});
 
         for(const chapNum of Object.keys(imgUrls)) {
-            if(chapNum >= this._firstChapter && chapNum <= this._lastChapter) {
-                const 
-                    chapName = chapNum.padStart(3,"0"),
-                    chapDir = path.join(this._dir,chapName);
+            const chapName = chapNum.padStart(3,"0");
+            const chapDir = path.join(this._dir,chapName);
 
-                fs.mkdirSync(chapDir);
-                for(const [i,imgUrl] of imgUrls[chapNum].entries()) {
-                    const imgName = (i+1).toString().padStart(2,"0") + ".png";
-                    try {
-                        await download(imgUrl,imgName,chapDir);
-                        console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
-                    }
-                    catch(err) {
-                        console.log(err);
-                    }
+            fs.mkdirSync(chapDir);
+            for(const [i,imgUrl] of imgUrls[chapNum].entries()) {
+                const imgName = (i+1).toString().padStart(2,"0") + ".png";
+                try {
+                    await download(imgUrl,imgName,chapDir);
+                    const imgPath = path.join(chapDir,imgName);
+                    console.log(`Downloaded: ${imgUrl} as ${imgPath}`);
+                }
+                catch(err) {
+                    console.log(err);
                 }
             }
+            this._zipChapter(chapName);
         }
-        console.log("Download finished. Beginning zipping the folders.");
-        this._zipChapters();
+        console.log("Download finished.");
     }
 
     async _getUrls() {
@@ -90,17 +93,46 @@ class MangadexDownloader {
         console.log("Acquiring manga data...");
         let manga = await Mangadex.getManga(this._mangaId);
         console.log("Manga data acquired.");
-        console.log(`Manga name: ${manga.manga.title}.`)
+        console.log(`Manga name: ${manga.manga.title}.`);
     
         let chaps = manga.chapter;
 
+        //filter by group
         if(this._group) 
-            chaps = chaps.filter(chap => chap.group_id === this._group || chap.group_id_2 === this._group || chap.group_id_3 === this._group);
+            chaps = chaps.filter(chap => 
+                chap.group_id === this._group || 
+                chap.group_id_2 === this._group || 
+                chap.group_id_3 === this._group);
 
+        //filter by chapter range
+        chaps = chaps.filter(chap => 
+            parseFloat(chap.chapter) >= this._firstChapter && 
+            parseFloat(chap.chapter) <= this._lastChapter);
+
+        //filter by language
         return chaps.filter(chap => chap.lang_code === this._lang)
                     .map(chap => chap.id);
+    }
 
-    }    
+    /**
+     * 
+     * @param {number} chapNum 
+     */
+    _zipChapter(chapNum) {
+        const chapDir = path.join(this._dir,chapNum);
+        const chapZip = chapDir + ".zip";
+        ZipLocal.zip(chapDir, (err,zipped)=> {
+            if(!err) {
+                zipped.compress();
+                zipped.save(chapZip,err=> {
+                    if(!err)  {
+                        console.log("Zipping: "+chapDir);
+                        fs.rmdirSync(chapDir,{recursive:true});
+                    }
+                })
+            }
+        });
+    }
 
     _zipChapters() {
         const chaps = listDir(this._dir);
