@@ -9,20 +9,35 @@ const
     path = require("path"),
     { download, listDir } = require("./util/util");
 
-
 class MangadexDownloader {
 
     /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @typedef ParamsType
+     * @property {string} dir
+     * @property {number} firstChapter
+     * @property {number} lastChapter
+     * @property {RangeType[]} range
+     * @property {string} lang
+     * @property {number} group
      * 
      * @param {number} mangaId 
+     * @param {ParamsType} params
      */
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, lang = "gb", group = 0}={}) {
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0}={}) {
         this.mangaId = mangaId;
         this.dir = dir;
-        this.firstChapter = firstChapter;
-        this.lastChapter = lastChapter;
         this.lang = lang;
-        this.group = group
+        this.group = group;
+
+        /* firstChapter and lastChapter are ignored if range has been set */
+        if(range.length === 0)
+            this.range = [{firstChapter,lastChapter}];
+        else
+            this.range = range;
     }
 
     set mangaId(id) {
@@ -33,20 +48,25 @@ class MangadexDownloader {
         this._dir = d;
     }
 
-    set firstChapter(chapter) {
-        this._firstChapter = parseFloat(chapter);
-    }
-
-    set lastChapter(chapter) {
-        this._lastChapter = parseFloat(chapter);
-    }
-
     set lang(l) {
         this._lang = l;
     }
 
     set group(g) {
         this._group = parseInt(g);
+    }
+
+    /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @param {RangeType[]} r
+     */
+    set range(r) {
+        if(!Array.isArray(r))
+            throw new Error("the range parameter must be an Array");
+        this._range = r;
     }
 
     async download() {
@@ -105,9 +125,7 @@ class MangadexDownloader {
                 chap.group_id_3 === this._group);
 
         //filter by chapter range
-        chaps = chaps.filter(chap => 
-            parseFloat(chap.chapter) >= this._firstChapter && 
-            parseFloat(chap.chapter) <= this._lastChapter);
+        chaps = chaps.filter(chap => this._isInRange(parseFloat(chap.chapter)));
 
         //filter by language
         return chaps.filter(chap => chap.lang_code === this._lang)
@@ -146,6 +164,17 @@ class MangadexDownloader {
         });
     
         console.log("Zipping complete.");
+    }
+
+    /**
+     * 
+     * @param {number} chap 
+     */
+    _isInRange(chap) {
+        for(const r of this._range) 
+            if(r.firstChapter <= chap && r.lastChapter >= chap)
+                return true;
+        return false;
     }
 }
 
