@@ -1,4 +1,8 @@
 node_modules/
+rss/
+manga/
 .vscode
 test.js
+main.js
 package-lock.json
+.env

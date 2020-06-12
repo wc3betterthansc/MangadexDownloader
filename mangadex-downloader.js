@@ -7,7 +7,8 @@ const
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, listDir } = require("./util/util");
+    { download, listDir, mkdir } = require("./util/util");
+const { parse } = require("path");
 
 class MangadexDownloader {
 
@@ -34,8 +35,12 @@ class MangadexDownloader {
         this.group = group;
 
         /* firstChapter and lastChapter are ignored if range has been set */
-        if(range.length === 0)
+        if(range.length === 0) {
+            firstChapter = parseFloat(firstChapter);
+            lastChapter = parseFloat(lastChapter);
             this.range = [{firstChapter,lastChapter}];
+        }
+
         else
             this.range = range;
     }
@@ -69,10 +74,14 @@ class MangadexDownloader {
         this._range = r;
     }
 
+    async mangaInfo() {
+        let manga = await Mangadex.getManga(this._mangaId);
+        console.log(manga.manga);
+    }
+
     async download() {
         const imgUrls = await this._getUrls();
-
-        if(!fs.existsSync(this._dir)) fs.mkdirSync(this._dir,{recursive: true});
+        mkdir(this._dir);
 
         for(const chapNum of Object.keys(imgUrls)) {
             const chapName = chapNum.padStart(3,"0");
