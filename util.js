@@ -17,7 +17,7 @@ async function getHTML(url) {
 
 /**
  * 
- * @param {strng} url 
+ * @param {string} url 
  */
 async function get(url) {
     const res = await fetch(url);

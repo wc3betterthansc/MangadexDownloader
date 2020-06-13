@@ -28,7 +28,8 @@ async function getNewChapters() {
 async function updateMangaList(newChapters) {
     for(const manga of allManga.values()) {
         const chapters = newChapters[manga.id];
-        manga.lastChapter = Math.max(...chapters);
+        if(chapters.length !== 0)
+            manga.lastChapter = Math.max(...chapters);
     }
     mangaList.saveAllManga();
 }

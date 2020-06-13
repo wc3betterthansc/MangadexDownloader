@@ -7,8 +7,9 @@ const
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, listDir, mkdir } = require("./util/util");
-const { parse } = require("path");
+    { download, listDir, mkdir } = require("./util");
+
+const MAX_DOWNLOAD_TRIES = 5;
 
 class MangadexDownloader {
 
@@ -90,18 +91,36 @@ class MangadexDownloader {
             fs.mkdirSync(chapDir);
             for(const [i,imgUrl] of imgUrls[chapNum].entries()) {
                 const imgName = (i+1).toString().padStart(2,"0") + ".png";
+
+                //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
-                    await download(imgUrl,imgName,chapDir);
-                    const imgPath = path.join(chapDir,imgName);
-                    console.log(`Downloaded: ${imgUrl} as ${imgPath}`);
+                    await MangadexDownloader._download(imgUrl, imgName, chapDir);
                 }
                 catch(err) {
-                    console.log(err);
+                    fs.rmdirSync(chapDir,{recursive:true});
+                    continue;
                 }
             }
             this._zipChapter(chapName);
         }
         console.log("Download finished.");
+    }
+
+    static async _download(imgUrl, imgName, chapDir) {
+        await helper(1);
+        async function helper(tryNumber) {
+            try {
+                await download(imgUrl, imgName, chapDir);
+                console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
+            }
+            catch(err) {
+                console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
+                if(tryNumber <= MAX_DOWNLOAD_TRIES) 
+                    await helper(++tryNumber);
+                else 
+                    throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
+            }
+        }
     }
 
     async _getUrls() {
@@ -163,7 +182,6 @@ class MangadexDownloader {
 
     _zipChapters() {
         const chaps = listDir(this._dir);
-    
         chaps.forEach(chap => {
             const chapDir = path.join(this._dir,chap);
             const chapZip = chapDir + ".zip";
@@ -171,7 +189,6 @@ class MangadexDownloader {
             ZipLocal.sync.zip(chapDir).compress().save(chapZip);
             fs.rmdirSync(chapDir,{recursive:true});
         });
-    
         console.log("Zipping complete.");
     }
 

@@ -13,6 +13,10 @@
     "dotenv": "^8.2.0",
     "mangadex-api": "^2.0.9",
     "utility": "file:./util",
-    "zip-local": "^0.3.4"
+    "zip-local": "^0.3.4",
+    "jsdom": "^16.2.2",
+    "lodash": "^4.17.15",
+    "node-fetch": "^2.6.0",
+    "xml2js": "^0.4.23"
   }
 }

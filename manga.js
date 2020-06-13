@@ -1,5 +1,5 @@
 const 
-    {mkdir} = require("./util/util"),
+    {mkdir} = require("./util"),
     fs = require("fs"),
     path = require("path");
 
@@ -87,6 +87,8 @@ class Manga {
             throw new Error(`Cannot load manga, ${MANGA_LIST_JSON} is missing.`);
 
         const mangaList = JSON.parse(fs.readFileSync(mangaListJson, "utf-8"));
+
+        if(!mangaList[id]) return null;
 
         return new Manga({
             name: mangaList[id].name,

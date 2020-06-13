@@ -1,9 +1,10 @@
 const 
-    {get, mkdir} = require("./util/util"),
+    {get, mkdir} = require("./util"),
     xmlParser = require("xml2js").Parser,
     fs = require("fs"),
     path = require("path"),
     _ = require("lodash");
+
 require("dotenv").config();
 
 class RSS {
@@ -45,8 +46,6 @@ class RSS {
      * Get the latest RSS from the URL and store it temporarily in the memory. Store and return the parsed version.
      */
     async getLatestRss() {
-        if(!this._id)  throw new Error("Cannot get RSS without specifying the id of the content.");
-
         const parser = new xmlParser();
         const rssFile = await get(this._url);
         const parsedRss = await parser.parseStringPromise(rssFile);
@@ -130,6 +129,7 @@ class RSS {
     }
 
     get _url() {
+        if(!this._id)  throw new Error("Cannot get RSS without specifying the id of the content.");
         const rssKey = process.env.RSS_KEY;
         return `https://mangadex.org/rss/${rssKey}/manga_id/${this._id}`;
     }
