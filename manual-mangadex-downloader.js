@@ -33,10 +33,14 @@ class ManualMangadexDownloader extends MangadexDownloader {
     }
 
     async download() {
-        super.download();
+        await super.download();
         this._updateManga();
     }
 
+    /**
+     * Call this function after download has been fully executed because it depends on the execution of the overriden method _getChapdId
+     * to get the real last chapter value.
+     */
     _updateManga() {
         let manga = Manga.loadManga(this._mangaId);
 
@@ -57,6 +61,11 @@ class ManualMangadexDownloader extends MangadexDownloader {
         manga.saveManga();
     }
 
+    /**
+     * lastChapter is not necessarily the last chapter but rather a limit (by default Infinity), in order to get the real
+     * last chapter we must intercept the id of the chapter then use it to get the list of all chapters, the last
+     * chapter is the last one in the array of chapters.
+     */
     async _getChapId() {
         let chapIds = await super._getChapId();
         const chap = await Mangadex.getChapter(chapIds[chapIds.length-1]);
