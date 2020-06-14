@@ -1,7 +1,7 @@
 const
-    CronJob = require("cron").CronJob;
+    CronJob = require("cron").CronJob,
     path = require("path"),
-    MangadexDownloader = require("./mangadex-downloader"),
+    MangadexDownloader = require("./mangadex-downloader").VerboseMangadexDownloader,
     RSS = require("./rss"),
     {MangaList} = require("./manga");
 
@@ -47,6 +47,7 @@ async function synchronize(dir=process.env.MANGA_DIR) {
                 dir: path.join(dir,manga.name),
                 firstChapter,
                 lastChapter,
+                lang: manga.lang
             });
         await mangaDownloader.download();
     }
@@ -62,8 +63,11 @@ function synchronizeMessage() {
  * @param {string} time 
  */
 function schedule(time) {
-    const job = new CronJob(time,()=>{synchronize();synchronizeMessage()},null,true);
-    job.start();
+    const job = new CronJob(time,async()=>{
+        await synchronize();
+        synchronizeMessage();
+    },null,true)
+    .start();
 }
 
 module.exports = schedule;

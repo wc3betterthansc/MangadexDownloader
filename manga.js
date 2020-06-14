@@ -14,13 +14,15 @@ class Manga {
      * @property {string} name
      * @property {number} id
      * @property {number} lastChapter
+     * @property {string} lang
      * 
      * @param {ParamType} params
      */
-    constructor({name,id,lastChapter=-1}={}) {
+    constructor({name,id,lastChapter=-1,lang="gb"}={}) {
         this.name = name;
         this.id = id;
         this.lastChapter = lastChapter;
+        this.lang = lang;
     }
 
     set name(n) {
@@ -33,6 +35,10 @@ class Manga {
 
     set lastChapter(chap) {
         this._lastChapter = parseFloat(chap);
+    }
+
+    set lang(l) {
+        this._lang = l;
     }
 
     /**
@@ -56,6 +62,10 @@ class Manga {
         return this._lastChapter;
     }
 
+    get lang() {
+        return this._lang;
+    }
+
     saveManga(dir=DEFAULT_DIR) {
         mkdir(dir);
         const mangaListJson = path.join(dir,MANGA_LIST_JSON);
@@ -67,6 +77,7 @@ class Manga {
         mangaList[this._id] = {
             name: this._name,
             lastChapter: this._lastChapter,
+            lang: this._lang
         }
         fs.writeFileSync(mangaListJson, JSON.stringify(mangaList), {encoding: "utf-8"});        
     }
@@ -91,9 +102,10 @@ class Manga {
         if(!mangaList[id]) return null;
 
         return new Manga({
+            id,
             name: mangaList[id].name,
             lastChapter: mangaList[id].lastChapter,
-            id
+            lang: mangaList[id].lang
         });
     }
 
@@ -138,6 +150,7 @@ class MangaList {
             mangaList[manga._id] = {
                 name: manga._name,
                 lastChapter: manga._lastChapter,
+                lang: manga._lang
             }
         }
         fs.writeFileSync(mangaListJson,JSON.stringify(mangaList),{encoding: "utf-8"});
@@ -156,6 +169,7 @@ class MangaList {
                 id,
                 name: mangaList[id].name,
                 lastChapter: mangaList[id].lastChapter,
+                lang: mangaList[id].lang
             }));
         return this._allManga;
     }
