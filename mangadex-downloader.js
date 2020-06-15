@@ -7,7 +7,7 @@ const
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, listDir, mkdir } = require("./util");
+    { download, mkdir } = require("./util");
 const manga = require("./manga");
 const { Manga } = require("./manga");
 
@@ -107,7 +107,7 @@ class MangadexDownloader {
                 }
                 catch(err) {
                     fs.rmdirSync(chapDir,{recursive:true});
-                    continue;
+                    break;
                 }
             }
             this._zipChapter(chapName);
@@ -280,7 +280,7 @@ class VerboseMangadexDownloader extends MangadexDownloader {
             }
             catch(err) {
                 console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
-                if(tryNumber <= MAX_DOWNLOAD_TRIES) 
+                if(tryNumber < MAX_DOWNLOAD_TRIES) 
                     await helper(++tryNumber);
                 else 
                     throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);

@@ -9,10 +9,12 @@ const
     {Manga} = require("./manga");
 
 /**
- * @this {ManualMangadexDownloader | VerboseManualMangadexDownloader}
+ * @this {ManualMangadexDownloader | VerboseManualMangadexDownloader} A manual mangadex downloader object
+ * 
+ * @return {Manga}
  * 
  * This function will update the currently downloaded manga list after finishing downloading the current manga. This
- * function is shared by both MangadexDownloader and VerboseMangadexDownloader.
+ * function is shared by both ManualMangadexDownloader and VerboseManualMangadexDownloader.
  */
 function updateManga() {
     let manga = Manga.loadManga(this._mangaId);
@@ -32,6 +34,7 @@ function updateManga() {
     }
     manga.lastChapter = this._lastChapter;
     manga.saveManga();
+    return manga;
 }
 
 /**
@@ -91,9 +94,11 @@ class VerboseManualMangadexDownloader extends VerboseMangadexDownloader {
     }
 }
 
-ManualMangadexDownloader.prototype._updateManga =
-VerboseManualMangadexDownloader.prototype._updateManga =
-updateManga;
+ManualMangadexDownloader.prototype._updateManga = updateManga;
+VerboseManualMangadexDownloader.prototype._updateManga = function() {
+    const manga = updateManga.apply(this);
+    console.log(`Manga ${manga.name} has been updated in the manga list.`);
+}
 
 module.exports = {
     ManualMangadexDownloader,
