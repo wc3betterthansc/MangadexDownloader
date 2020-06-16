@@ -59,7 +59,8 @@ class Scheduler {
     }
 
     _synchronizeMessage() {
-        console.log(`Finished synchronization at: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`);
+        const date = new Date();
+        console.log(`Finished synchronization at: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
     }
     
     async _synchronize(dir=process.env.MANGA_DIR) {

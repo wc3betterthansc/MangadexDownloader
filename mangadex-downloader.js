@@ -96,8 +96,8 @@ class MangadexDownloader {
         for(const chapNum of Object.keys(imgUrls)) {
             const chapName = chapNum.padStart(3,"0");
             const chapDir = path.join(this._dir,chapName);
+            mkdir(chapDir);
 
-            fs.mkdirSync(chapDir);
             for(const [i,imgUrl] of imgUrls[chapNum].entries()) {
                 const imgName = (i+1).toString().padStart(2,"0") + ".png";
 
