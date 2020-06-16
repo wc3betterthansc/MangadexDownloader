@@ -165,7 +165,7 @@ class MangaList {
         const mangaList = JSON.parse(fs.readFileSync(mangaListJson, "utf-8"));
 
         for(const id of Object.keys(mangaList))
-            this._allManga.set(id, new Manga({
+            this._allManga.set(parseInt(id), new Manga({
                 id,
                 name: mangaList[id].name,
                 lastChapter: mangaList[id].lastChapter,

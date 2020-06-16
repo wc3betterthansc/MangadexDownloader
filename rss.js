@@ -22,24 +22,43 @@ class RSS {
         this.id = id;
         this.dir = dir;
         this.lastChapter = lastChapter;
-
-        if(this._id) this.getLatestRss();
     }
 
+    /**
+     * @param {string} n
+     */
     set name(n) {
         this._name = n;
     }
 
+    /**
+     * @param {string | number} i
+     */
     set id(i) {
         this._id = parseInt(i);
     }
 
+    /**
+     * @param {string} d
+     */
     set dir(d) {
         this._dir = d;
     }
 
     set lastChapter(chap) {
         this._lastChapter = parseFloat(chap);
+    }
+
+    get name() {
+        return this._name;
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    get dir() {
+        return this._dir;
     }
 
     /**
@@ -99,8 +118,10 @@ class RSS {
     }
 
     async getNewChapters() {
-        const previousChapters = await this.getPreviousChapters();
-        const latestChapters = await this.getLatestChapters();
+        let previousChaptersPromise = this.getPreviousChapters();
+        let latestChaptersPromise = this.getLatestChapters();
+        
+        let [previousChapters, latestChapters] = await Promise.all([previousChaptersPromise,latestChaptersPromise]);
         this._saveRSSFile();
 
         if(!previousChapters) {

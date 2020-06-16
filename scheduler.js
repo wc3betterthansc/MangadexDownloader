@@ -1,3 +1,5 @@
+const manga = require("./manga");
+
 const
     CronJob = require("cron").CronJob,
     path = require("path"),
@@ -34,18 +36,26 @@ class Scheduler {
     }
 
     async _getNewChapters() {
-        const newChapters = {};
+        const rssList = [];
+        const newChaptersDict = {};
     
         for(const manga of this._allManga.values()) {
-            const rss = new RSS({
+            rssList.push(new RSS({
                 id: manga.id,
                 name: manga.name,
                 lastChapter: manga.lastChapter
-            });
-            const chaps = await rss.getNewChapters();
-            newChapters[manga.id] = chaps;
+            }));
         }
-        return newChapters;
+
+        const newChaptersPromises = rssList.map(rss => rss.getNewChapters());
+        const newChaptersArr = await Promise.all(newChaptersPromises);
+        newChaptersArr.forEach((chaps,i) => {
+            const id = rssList[i].id;
+            const manga = this._allManga.get(id);
+            newChaptersDict[manga.id] = chaps;
+        });
+        
+        return newChaptersDict;
     }
 
     _synchronizeMessage() {
