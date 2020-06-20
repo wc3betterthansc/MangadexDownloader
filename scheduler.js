@@ -3,19 +3,28 @@ const manga = require("./manga");
 const
     CronJob = require("cron").CronJob,
     path = require("path"),
-    MangadexDownloader = require("./mangadex-downloader").VerboseMangadexDownloader,
-    RSS = require("./rss"),
+    mangadexDownloader = require("./mangadex-downloader"),
+    rss = require("./rss"),
     {MangaList} = require("./manga");
 
 require("dotenv").config();
 
 class Scheduler {
-    /**
-     * 
-     * @param {string} time 
-     */
-    constructor(time) {
+
+    static downloaderClass = {
+        true: mangadexDownloader.VerboseMangadexDownloader,
+        false: mangadexDownloader.MangadexDownloader
+    }
+
+    static rssClass = {
+        true: rss.VerboseRSS,
+        false: rss.RSS
+    }
+
+    constructor({time,downloaderVerbose=false,rssVerbose=false}={}) {
         this.time = time;
+        this._MangadexDownloader = Scheduler.downloaderClass[downloaderVerbose];
+        this._RSS = Scheduler.rssClass[rssVerbose];
         this._mangaList = new MangaList();
     }
     
@@ -25,7 +34,7 @@ class Scheduler {
     set time(t) {
         this._time = t;
     }
-    
+
     async _updateMangaList(newChapters) {
         for(const manga of this._allManga.values()) {
             const chapters = newChapters[manga.id];
@@ -34,17 +43,14 @@ class Scheduler {
         }
         this._mangaList.saveAllManga();
     }
-
+    
     async _getNewChapters() {
         const rssList = [];
         const newChaptersDict = {};
     
         for(const manga of this._allManga.values()) {
-            rssList.push(new RSS({
-                id: manga.id,
-                name: manga.name,
-                lastChapter: manga.lastChapter
-            }));
+            const rss = new this._RSS(manga);
+            rssList.push(rss);
         }
 
         const newChaptersPromises = rssList.map(rss => rss.getNewChapters());
@@ -73,7 +79,7 @@ class Scheduler {
             const 
                 firstChapter = Math.min(...newChapters[manga.id]),
                 lastChapter = Math.max(...newChapters[manga.id]),
-                mangaDownloader = new MangadexDownloader(manga.id,{
+                mangaDownloader = new this._MangadexDownloader(manga.id,{
                     dir: path.join(dir,manga.name),
                     firstChapter,
                     lastChapter,
@@ -84,12 +90,17 @@ class Scheduler {
         this._updateMangaList(newChapters);
     }
 
-    start() {
-        const job = new CronJob(this._time,async()=>{
+    async start(startImmediately=false) {
+        const synchronize = async ()=>{
             await this._synchronize();
             this._synchronizeMessage();
-        },null,true)
-        .start();
+        }
+
+        if(startImmediately) await synchronize();
+        
+        const job = new CronJob(this._time,async()=>await synchronize(),null,true)
+            .start();
+
     }
 }
 
