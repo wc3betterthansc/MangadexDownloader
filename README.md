@@ -133,12 +133,12 @@ The value is an object containing the name of the manga, the last chapter downlo
   "5":{
     "name":"Naruto",
     "lastChapter":519,
-    "lang":"eng"
+    "lang":"gb"
   },
   "39":{
     "name":"One Piece",
     "lastChapter":983,
-    "lang":"eng"
+    "lang":"gb"
   }
 }
 ```
