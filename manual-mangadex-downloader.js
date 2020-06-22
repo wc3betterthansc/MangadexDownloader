@@ -53,17 +53,39 @@ class ManualMangadexDownloader extends MangadexDownloader {
      * @property {RangeType[]} range
      * @property {string} lang
      * @property {number} group
+     * @property {boolean} noNumberAllowed
      * 
      * @param {number} mangaId 
      * @param {ParamsType} params
      */
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0}={}) {
-        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group});
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 
     async download() {
         await super.download();
         this._updateManga();
+    }
+
+    /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @typedef ParamsType
+     * @property {string} dir
+     * @property {number} firstChapter
+     * @property {number} lastChapter
+     * @property {RangeType[]} range
+     * @property {string} lang
+     * @property {number} group
+     * @property {boolean} noNumberAllowed
+     * 
+     * @param {number} mangaId 
+     * @param {ParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 }
 
@@ -80,17 +102,39 @@ class VerboseManualMangadexDownloader extends VerboseMangadexDownloader {
      * @property {RangeType[]} range
      * @property {string} lang
      * @property {number} group
+     * @property {boolean} noNumberAllowed
      * 
      * @param {number} mangaId 
      * @param {ParamsType} params
      */
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0}={}) {
-        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group});
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 
     async download() {
         await super.download();
         this._updateManga();
+    }
+
+    /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @typedef ParamsType
+     * @property {string} dir
+     * @property {number} firstChapter
+     * @property {number} lastChapter
+     * @property {RangeType[]} range
+     * @property {string} lang
+     * @property {number} group
+     * @property {boolean} noNumberAllowed
+     * 
+     * @param {number} mangaId 
+     * @param {ParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 }
 

@@ -7,9 +7,9 @@ const
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, mkdir } = require("./util");
+    { download, mkdir } = require("./util"),
+    { Manga } = require("./manga");
 const manga = require("./manga");
-const { Manga } = require("./manga");
 
 const MAX_DOWNLOAD_TRIES = 5;
 
@@ -27,15 +27,17 @@ class MangadexDownloader {
      * @property {RangeType[]} range
      * @property {string} lang
      * @property {number} group
+     * @property {boolean} noNumberAllowed
      * 
      * @param {number} mangaId 
      * @param {ParamsType} params
      */
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0}={}) {
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0, noNumberAllowed = true}={}) {
         this.mangaId = mangaId;
         this.dir = dir;
         this.lang = lang;
         this.group = group;
+        this.noNumberAllowed = noNumberAllowed;
 
         /* firstChapter and lastChapter are ignored if range has been set */
         if(range.length === 0) {
@@ -74,6 +76,13 @@ class MangadexDownloader {
      */
     set group(g) {
         this._group = parseInt(g);
+    }
+
+    /**
+     * @param {boolean} bool
+     */
+    set noNumberAllowed(bool) {
+        this._noNumberAllowed = bool;
     }
 
     /**
@@ -159,7 +168,7 @@ class MangadexDownloader {
                 chap.group_id_3 === this._group);
 
         //filter by chapter range
-        chaps = chaps.filter(chap => this._isInRange(parseFloat(chap.chapter)));
+        chaps = chaps.filter(chap => this._isInRange(chap.chapter));
 
         //filter by language
         chaps = chaps.filter(chap => chap.lang_code === this._lang)
@@ -178,7 +187,13 @@ class MangadexDownloader {
         for(let id of chapIds) {
             const chap = await this._getChap(id);
             const urls = chap.page_array;
-            chapUrls[parseFloat(chap.chapter)] = urls;
+            let chapNumber = parseFloat(chap.chapter);
+
+            if(isNaN(chapNumber)) {
+                if(chapIds.length === 1) chapNumber = 1;
+                //TODO else
+            }
+            chapUrls[chapNumber] = urls;
         }
         return chapUrls;
     }
@@ -208,10 +223,35 @@ class MangadexDownloader {
      * @param {number} chap 
      */
     _isInRange(chap) {
+        if(this._noNumberAllowed && chap == "")
+            return true;
+        chap = parseFloat(chap);
         for(const r of this._range) 
             if(r.firstChapter <= chap && r.lastChapter >= chap)
-                return true;
+                return true; 
         return false;
+    }
+
+    /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @typedef ParamsType
+     * @property {string} dir
+     * @property {number} firstChapter
+     * @property {number} lastChapter
+     * @property {RangeType[]} range
+     * @property {string} lang
+     * @property {number} group
+     * @property {boolean} noNumberAllowed
+     * 
+     * @param {number} mangaId 
+     * @param {ParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        const mangadexDownloader = new this(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
+        return mangadexDownloader.download();
     }
 }
 
@@ -232,8 +272,8 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * @param {number} mangaId 
      * @param {ParamsType} params
      */
-    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0}={}) {
-        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group});
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 
     async download() {
@@ -286,6 +326,27 @@ class VerboseMangadexDownloader extends MangadexDownloader {
                     throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
             }
         }
+    }
+
+    /**
+     * @typedef RangeType
+     * @property {number} firstChapter 
+     * @property {number} lastChapter
+     * 
+     * @typedef ParamsType
+     * @property {string} dir
+     * @property {number} firstChapter
+     * @property {number} lastChapter
+     * @property {RangeType[]} range
+     * @property {string} lang
+     * @property {number} group
+     * @property {boolean} noNumberAllowed
+     * 
+     * @param {number} mangaId 
+     * @param {ParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 }
 
