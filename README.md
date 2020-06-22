@@ -120,7 +120,7 @@ VerboseDownloader.download(5,{
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //no console feedback. Update the anime list after finishing the download.
 const SilentDownloader = require("./manual-mangadex-downloader").ManualMangadexDownloader;
-const SilentDownloader.download(5,{
+SilentDownloader.download(5,{
     dir: "C:\\Manga\\Naruto"
 });
 ```
