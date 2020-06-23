@@ -83,7 +83,8 @@ class Scheduler {
                     dir: path.join(dir,manga.name),
                     firstChapter,
                     lastChapter,
-                    lang: manga.lang
+                    lang: manga.lang,
+                    noNumberAllowed: false
                 });
             await mangaDownloader.download();
         }

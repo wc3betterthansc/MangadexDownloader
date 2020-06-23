@@ -7,9 +7,7 @@ const
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, mkdir } = require("./util"),
-    { Manga } = require("./manga");
-const manga = require("./manga");
+    { download, mkdir, getUniqueFilename, getValidFileName } = require("./util");
 
 const MAX_DOWNLOAD_TRIES = 5;
 
@@ -102,8 +100,8 @@ class MangadexDownloader {
         const imgUrls = await this._getUrls();
         mkdir(this._dir);
 
-        for(const chapNum of Object.keys(imgUrls)) {
-            const chapName = chapNum.padStart(3,"0");
+        chaptersLoop: for(const chapNum of Object.keys(imgUrls)) {
+            const chapName = getValidFileName(chapNum.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
             mkdir(chapDir);
 
@@ -112,14 +110,15 @@ class MangadexDownloader {
 
                 //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
-                    await this.constructor._download(imgUrl, imgName, chapDir);
+                    await this.constructor._download({imgUrl, imgName, chapDir});
                 }
                 catch(err) {
                     fs.rmdirSync(chapDir,{recursive:true});
-                    break;
+                    console.error(err);
+                    continue chaptersLoop;
                 }
             }
-            this._zipChapter(chapName);
+            this._zipChapter(chapDir,chapName);
         }
     }
 
@@ -129,11 +128,11 @@ class MangadexDownloader {
      * @param {string} imgName 
      * @param {string} chapDir 
      */
-    static async _download(imgUrl, imgName, chapDir) {
+    static async _download({imgUrl, imgName, chapDir}) {
         await helper(1);
         async function helper(tryNumber) {
             try {
-                await download(imgUrl, imgName, chapDir);
+                await download({url: imgUrl, filename: imgName, dir: chapDir});
             }
             catch(err) {
                 if(tryNumber <= MAX_DOWNLOAD_TRIES) 
@@ -144,16 +143,29 @@ class MangadexDownloader {
         }
     }
 
-    _getManga() {
-        return Mangadex.getManga(this._mangaId);
+    async _getManga() {
+        try {
+            const manga = await Mangadex.getManga(this._mangaId);
+            return manga;
+        }
+        catch(err) {
+            console.error("Trouble getting mangadex manga information. Try again later.");
+        }
+
     }
 
     /**
      * 
      * @param {number} id 
      */
-    _getChap(id) {
-        return Mangadex.getChapter(id);
+    async _getChap(id) {
+        try {
+            const chap = await Mangadex.getChapter(id);
+            return chap;
+        }
+        catch(err) {
+            console.error("Trouble getting mangadex chapter information. Try again later.");
+        }
     }
 
     async _getChapId() {
@@ -191,7 +203,7 @@ class MangadexDownloader {
 
             if(isNaN(chapNumber)) {
                 if(chapIds.length === 1) chapNumber = 1;
-                //TODO else
+                else chapNumber = chap.title;
             }
             chapUrls[chapNumber] = urls;
         }
@@ -199,18 +211,18 @@ class MangadexDownloader {
     }
 
     /**
-     * 
+     * @param {string} chapDir
      * @param {number} chapNum 
      */
-    _zipChapter(chapNum) {
-        const chapDir = path.join(this._dir,chapNum);
-        const chapZip = chapDir + ".zip";
+    _zipChapter(chapDir,chapNum) {
+        let chapZip = path.join(this._dir,getUniqueFilename({filename: chapNum+".zip", dir:this._dir}));
+        
         ZipLocal.zip(chapDir, (err,zipped)=> {
             if(!err) {
                 zipped.compress();
                 zipped.save(chapZip,err=> {
                     if(!err)  {
-                        console.log("Zipping: "+chapDir);
+                        console.log(`Zipping: ${chapDir} as ${chapZip}`);
                         fs.rmdirSync(chapDir,{recursive:true});
                     }
                 })
@@ -311,11 +323,11 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * @param {string} imgName 
      * @param {string} chapDir 
      */
-    static async _download(imgUrl, imgName, chapDir) {
+    static async _download({imgUrl, imgName, chapDir}) {
         await helper(1);
         async function helper(tryNumber) {
             try {
-                await download(imgUrl, imgName, chapDir);
+                await download({url: imgUrl, filename: imgName, dir: chapDir});
                 console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
             }
             catch(err) {
