@@ -76,7 +76,7 @@ new Scheduler({time}).start();
 
 ```javascript
 { 
-  //The time used by the scheduler to check for new chapters. Uses the cron time syntaxe.
+  //The time used by the scheduler to check for new chapters. Uses the cron time syntaxe. Default = Scheduler.DEFAULT_TIME.
   time: "0 */2 * * *",
   //If you want feedback from the downloader. Default = false.
   downloaderVerbose: true,
@@ -101,7 +101,7 @@ downloader.download();
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //no console feedback. Update the anime list after finishing the download.
 const SilentDownloader = require("./mangadex-downloader").ManualMangadexDownloader;
-const downloader = new VerboseDownloader(5,{
+const downloader = new SilentDownloader(5,{
     dir: "C:\\Manga\\Naruto"
 });
 downloader.download();
