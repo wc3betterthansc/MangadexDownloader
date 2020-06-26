@@ -1,5 +1,3 @@
-const manga = require("./manga");
-
 const
     CronJob = require("cron").CronJob,
     path = require("path"),
@@ -21,7 +19,17 @@ class Scheduler {
         false: rss.RSS
     }
 
-    constructor({time,downloaderVerbose=false,rssVerbose=false}={}) {
+    static DEFAULT_TIME = "0 */2 * * *";
+
+    /**
+     * @typedef SchedulerParamsType
+     * @property {string} [time]
+     * @property {boolean} [downloaderVerbose]
+     * @property {boolean} [rssVerbose]
+     *
+     * @param {SchedulerParamsType} [param] 
+     */
+    constructor({time=Scheduler.DEFAULT_TIME,downloaderVerbose=false,rssVerbose=false}={}) {
         this.time = time;
         this._MangadexDownloader = Scheduler.downloaderClass[downloaderVerbose];
         this._RSS = Scheduler.rssClass[rssVerbose];

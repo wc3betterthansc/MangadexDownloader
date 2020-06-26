@@ -4,13 +4,22 @@ const
     fs = require("fs"),
     path = require("path");
 
+/**
+ * @typedef DownloadParamsType
+ * @property {string} url 
+ * @property {string} filename 
+ * @property {string} dir
+ * @property {boolean} [override]
+ * 
+ */
+
 /* This function returns a DOM Object of a web page inside a promise */
 /**
  * 
  * @param {string} url 
  */
 async function getHTML(url) {
-    const res = await fetch(url);
+    const res = await fetch(url,undefined);
     const html = await res.text();
     return new JSDOM(html).window.document;
 }
@@ -20,7 +29,7 @@ async function getHTML(url) {
  * @param {string} url 
  */
 async function get(url) {
-    const res = await fetch(url);
+    const res = await fetch(url,undefined);
     return res.text();
 }
 
@@ -38,19 +47,13 @@ async function wait(dur) {
 /**
  * download a file from "url" into "dir" and name it "filename". the override option will replace existing files, otherwise it will add the file * next to the previous ones with an incremented value between parentheses.
  * 
- * @typedef ParamType
- * @property {string} url 
- * @property {string} filename 
- * @property {string} dir
- * @property {boolean} override
- * 
- * @param {ParamType} param
+ * @param {DownloadParamsType} param
  * 
  */
 async function download({url, filename, dir, override=false}) {
     if(!override) filename = getUniqueFilename({filename, dir});
 
-    const imgRes = await fetch(url);
+    const imgRes = await fetch(url, undefined);
     return new Promise((res,rej)=>{
         const file = fs.createWriteStream(path.join(dir,filename));
         file.on("finish",()=>{

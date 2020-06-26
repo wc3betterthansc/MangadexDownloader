@@ -1,8 +1,7 @@
 {
-  "name": "mangadex",
+  "name": "mangadex-downloader",
   "version": "1.0.0",
   "description": "",
-  "main": "mangadex.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,7 +9,6 @@
   "license": "ISC",
   "dependencies": {
     "cron": "^1.8.2",
-    "dotenv": "^8.2.0",
     "mangadex-api": "^2.0.9",
     "utility": "file:./util",
     "zip-local": "^0.3.4",

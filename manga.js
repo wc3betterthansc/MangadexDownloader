@@ -9,17 +9,21 @@ const DEFAULT_DIR = "./manga";
 class Manga {
 
     /**
-     * @typedef ParamType 
+     * @typedef MangaParamType 
      * 
-     * @property {string} name
-     * @property {number} id
-     * @property {number} lastChapter
-     * @property {string} lang
+     * @property {string} [name]
+     * @property {number|string} [id]
+     * @property {number} [lastChapter]
+     * @property {string} [lang]
+     */
+
+    /**
      * 
-     * @param {ParamType} params
+     * @param {MangaParamType} [params]
      */
     constructor({name,id,lastChapter=-1,lang="gb"}={}) {
         this.name = name;
+        // @ts-ignore
         this.id = id;
         this.lastChapter = lastChapter;
         this.lang = lang;
@@ -29,12 +33,16 @@ class Manga {
         this._name = n;
     }
 
+    /**
+     * @param {number} i
+     */
     set id(i) {
+        // @ts-ignore
         this._id = parseInt(i);
     }
 
     set lastChapter(chap) {
-        this._lastChapter = parseFloat(chap);
+        this._lastChapter = parseFloat(chap.toString());
     }
 
     set lang(l) {
@@ -191,18 +199,14 @@ class MangaList {
     }
 
     /**
-     * @typedef ParamType 
      * 
-     * @property {string} name
-     * @property {number} id
-     * @property {number} lastChapter
-     * 
-     * @param {ParamType | Manga} manga
+     * @param {MangaParamType | Manga} manga
      */
     addManga(manga) {
         if(!(manga instanceof Manga)) {
             manga = new Manga(manga);
         }
+        // @ts-ignore
         this._allManga.set(manga._id,manga);
     }
 
@@ -222,14 +226,14 @@ class MangaList {
     }
 
     /**
+     * Delete the manga from the MangaList model. This method does not update the manga list on the drive. 
+     * Use saveAllManga to write the modifications on the drive. 
      * 
      * @param {number} id -manga id
      * 
-     * Delete the manga from the MangaList model. This method does not update the manga list on the drive. 
-     * Use saveAllManga to write the modifications on the drive. 
      */
     deleteManga(id) {
-        delete this._allManga.delete(id);
+        this._allManga.delete(id);
     }
 }
 

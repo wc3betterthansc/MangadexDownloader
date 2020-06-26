@@ -2,19 +2,21 @@ const
     {get} = require("./util"),
     XMLParser = require("xml2js").Parser,
     fs = require("fs"),
-    path = require("path"),
-    _ = require("lodash");
+    path = require("path");
 
 require("dotenv").config();
 
 class RSS {
     /**
-     * @typedef ParamsType
-     * @property {string} name
-     * @property {number} id
-     * @property {number} lastChapter
+     * @typedef RSSParamsType
+     * @property {string} [name]
+     * @property {number} [id]
+     * @property {number} [lastChapter]
      * 
-     * @param {ParamsType} param 
+     */
+
+    /**
+     * @param {RSSParamsType} [param]
      */
     constructor({name,id,lastChapter=-1}={}) {
         this.name = name;
@@ -33,6 +35,7 @@ class RSS {
      * @param {string | number} i
      */
     set id(i) {
+        // @ts-ignore
         this._id = parseInt(i);
     }
 
@@ -40,6 +43,7 @@ class RSS {
      * @param {string | number} chap
      */
     set lastChapter(chap) {
+        // @ts-ignore
         this._lastChapter = parseFloat(chap);
     }
 
@@ -91,12 +95,7 @@ class RSS {
 
 class VerboseRSS extends RSS {
     /**
-     * @typedef ParamsType
-     * @property {string} name
-     * @property {number} id
-     * @property {number} lastChapter
-     * 
-     * @param {ParamsType} param 
+     * @param {RSSParamsType} param 
      */
     constructor({name,id,lastChapter=-1}={}) {
         super({name,id,lastChapter});

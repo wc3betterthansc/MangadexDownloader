@@ -1,9 +1,9 @@
 /**
- * this is for autocomplete in VSCode
  * @type {Mangadex.Mangadex}
  */
-const 
-    Mangadex = require("mangadex-api"),
+// @ts-ignore
+const Mangadex = require("mangadex-api"),
+    Manga = require("./manga").Manga,
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
@@ -18,17 +18,25 @@ class MangadexDownloader {
      * @property {number} firstChapter 
      * @property {number} lastChapter
      * 
-     * @typedef ParamsType
-     * @property {string} dir
-     * @property {number} firstChapter
-     * @property {number} lastChapter
-     * @property {RangeType[]} range
-     * @property {string} lang
-     * @property {number} group
-     * @property {boolean} noNumberAllowed
+     * @typedef ConstructorParamsType
+     * @property {string} [dir]
+     * @property {number|string} [firstChapter]
+     * @property {number|string} [lastChapter]
+     * @property {RangeType[]} [range]
+     * @property {string} [lang]
+     * @property {number|string} [group]
+     * @property {boolean} [noNumberAllowed]
+     * 
+     * @typedef DownloadParamsType
+     * @property {string} imgUrl 
+     * @property {string} imgName 
+     * @property {string} chapDir
+     */
+    
+    /** 
      * 
      * @param {number} mangaId 
-     * @param {ParamsType} params
+     * @param {ConstructorParamsType} [params]
      */
     constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0, noNumberAllowed = true}={}) {
         this.mangaId = mangaId;
@@ -39,7 +47,9 @@ class MangadexDownloader {
 
         /* firstChapter and lastChapter are ignored if range has been set */
         if(range.length === 0) {
+            // @ts-ignore
             firstChapter = parseFloat(firstChapter);
+            // @ts-ignore
             lastChapter = parseFloat(lastChapter);
             this.range = [{firstChapter,lastChapter}];
         }
@@ -52,6 +62,7 @@ class MangadexDownloader {
      * @param {number | string} id
      */
     set mangaId(id) {
+        // @ts-ignore
         this._mangaId = parseInt(id);
     }
 
@@ -73,6 +84,7 @@ class MangadexDownloader {
      * @param {number | string} g
      */
     set group(g) {
+        // @ts-ignore
         this._group = parseInt(g);
     }
 
@@ -84,9 +96,6 @@ class MangadexDownloader {
     }
 
     /**
-     * @typedef RangeType
-     * @property {number} firstChapter 
-     * @property {number} lastChapter
      * 
      * @param {RangeType[]} r
      */
@@ -110,6 +119,7 @@ class MangadexDownloader {
 
                 //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
+                    // @ts-ignore
                     await this.constructor._download({imgUrl, imgName, chapDir});
                 }
                 catch(err) {
@@ -124,9 +134,7 @@ class MangadexDownloader {
 
     /**
      * 
-     * @param {string} imgUrl 
-     * @param {string} imgName 
-     * @param {string} chapDir 
+     * @param {DownloadParamsType} params
      */
     static async _download({imgUrl, imgName, chapDir}) {
         await helper(1);
@@ -170,6 +178,9 @@ class MangadexDownloader {
 
     async _getChapId() {
         const manga = await this._getManga();
+        /**
+         * @type {Array}
+         */
         let chaps = manga.chapter;
 
         //filter by group
@@ -203,6 +214,7 @@ class MangadexDownloader {
 
             if(isNaN(chapNumber)) {
                 if(chapIds.length === 1) chapNumber = 1;
+                // @ts-ignore
                 else chapNumber = chap.title;
             }
             chapUrls[chapNumber] = urls;
@@ -212,7 +224,7 @@ class MangadexDownloader {
 
     /**
      * @param {string} chapDir
-     * @param {number} chapNum 
+     * @param {number|string} chapNum 
      */
     _zipChapter(chapDir,chapNum) {
         let chapZip = path.join(this._dir,getUniqueFilename({filename: chapNum+".zip", dir:this._dir}));
@@ -232,11 +244,12 @@ class MangadexDownloader {
 
     /**
      * 
-     * @param {number} chap 
+     * @param {number|string} chap 
      */
     _isInRange(chap) {
         if(this._noNumberAllowed && chap == "")
             return true;
+        // @ts-ignore
         chap = parseFloat(chap);
         for(const r of this._range) 
             if(r.firstChapter <= chap && r.lastChapter >= chap)
@@ -245,21 +258,9 @@ class MangadexDownloader {
     }
 
     /**
-     * @typedef RangeType
-     * @property {number} firstChapter 
-     * @property {number} lastChapter
-     * 
-     * @typedef ParamsType
-     * @property {string} dir
-     * @property {number} firstChapter
-     * @property {number} lastChapter
-     * @property {RangeType[]} range
-     * @property {string} lang
-     * @property {number} group
-     * @property {boolean} noNumberAllowed
      * 
      * @param {number} mangaId 
-     * @param {ParamsType} params
+     * @param {ConstructorParamsType} [params]
      */
     static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
         const mangadexDownloader = new this(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
@@ -269,20 +270,9 @@ class MangadexDownloader {
 
 class VerboseMangadexDownloader extends MangadexDownloader {
     /**
-     * @typedef RangeType
-     * @property {number} firstChapter 
-     * @property {number} lastChapter
-     * 
-     * @typedef ParamsType
-     * @property {string} dir
-     * @property {number} firstChapter
-     * @property {number} lastChapter
-     * @property {RangeType[]} range
-     * @property {string} lang
-     * @property {number} group
      * 
      * @param {number} mangaId 
-     * @param {ParamsType} params
+     * @param {ConstructorParamsType} [params]
      */
     constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
         super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
@@ -319,9 +309,7 @@ class VerboseMangadexDownloader extends MangadexDownloader {
 
     /**
      * 
-     * @param {string} imgUrl 
-     * @param {string} imgName 
-     * @param {string} chapDir 
+     * @param {DownloadParamsType} params
      */
     static async _download({imgUrl, imgName, chapDir}) {
         await helper(1);
@@ -341,28 +329,106 @@ class VerboseMangadexDownloader extends MangadexDownloader {
     }
 
     /**
-     * @typedef RangeType
-     * @property {number} firstChapter 
-     * @property {number} lastChapter
-     * 
-     * @typedef ParamsType
-     * @property {string} dir
-     * @property {number} firstChapter
-     * @property {number} lastChapter
-     * @property {RangeType[]} range
-     * @property {string} lang
-     * @property {number} group
-     * @property {boolean} noNumberAllowed
      * 
      * @param {number} mangaId 
-     * @param {ParamsType} params
+     * @param {ConstructorParamsType} params
      */
     static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
         return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
     }
 }
 
+/**
+ * @this {ManualMangadexDownloader | VerboseManualMangadexDownloader} A manual mangadex downloader object
+ * @return {Manga}
+ * 
+ * This function will update the currently downloaded manga list after finishing downloading the current manga. This
+ * function is shared by both ManualMangadexDownloader and VerboseManualMangadexDownloader.
+ */
+function updateManga() {
+    let manga = Manga.loadManga(this._mangaId);
+
+    if(!manga) {
+        let unixPath = path.normalize(this._dir).replace(/\\/g,"/");
+
+        if(unixPath.charAt(unixPath.length-1) === '/')
+            unixPath = unixPath.substring(0,unixPath.length-1);
+
+        const pathArr = unixPath.split("/");
+        const name = pathArr[pathArr.length-1];
+            manga = new Manga({
+                name,
+                id: this._mangaId,
+            });
+    }
+    manga.lastChapter = this._lastChapter;
+    manga.saveManga();
+    return manga;
+}
+
+/**
+ * Use this class to manually download manga. It will automatically update the list of manga.
+ */
+class ManualMangadexDownloader extends MangadexDownloader {
+    /**
+     * 
+     * @param {number} mangaId 
+     * @param {ConstructorParamsType} params
+     */
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
+    }
+
+    async download() {
+        await super.download();
+        this._updateManga();
+    }
+
+    /**
+     * 
+     * @param {number} mangaId 
+     * @param {ConstructorParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
+    }
+}
+
+class VerboseManualMangadexDownloader extends VerboseMangadexDownloader {
+    /**
+     * 
+     * @param {number} mangaId 
+     * @param {ConstructorParamsType} params
+     */
+    constructor(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        super(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
+    }
+
+    async download() {
+        await super.download();
+        this._updateManga();
+    }
+
+    /**
+     * 
+     * @param {number} mangaId 
+     * @param {ConstructorParamsType} params
+     */
+    static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
+        return super.download(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed});
+    }
+}
+
+ManualMangadexDownloader.prototype._updateManga = updateManga;
+VerboseManualMangadexDownloader.prototype._updateManga = function() {
+    const manga = updateManga.apply(this);
+    console.log(`Manga ${manga.name} has been updated in the manga list.`);
+}
+
+
 module.exports = {
     MangadexDownloader,
-    VerboseMangadexDownloader
+    VerboseMangadexDownloader,
+    ManualMangadexDownloader,
+    VerboseManualMangadexDownloader
 }

@@ -85,14 +85,14 @@ new Scheduler({time}).start();
 }
 ```
 
-**Use the *manual-mangadex-downloader.js* classes if you want to update the JSON manga list used by the Scheduler after finishing a download. 
-Just like the stand-alone version of the downloaders in the "mangadex-downloader.js" file *manual-mangadex-downloader.js*
-comes with a verbose and non-verbose class:**
+**Use the Manual downloader classes if you want to update the JSON manga list that is used by the Scheduler. 
+Just like the stand-alone version of the downloaders classes, the manual downloaders
+come with a verbose and non-verbose class:**
 
 ```javascript
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //with console feedback. Update the anime list after finishing the download.
-const VerboseDownloader = require("./manual-mangadex-downloader").VerboseManualMangadexDownloader;
+const VerboseDownloader = require("./mangadex-downloader").VerboseManualMangadexDownloader;
 const downloader = new VerboseDownloader(5,{
     dir: "C:\\Manga\\Naruto"
 });
@@ -100,7 +100,7 @@ downloader.download();
 
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //no console feedback. Update the anime list after finishing the download.
-const SilentDownloader = require("./manual-mangadex-downloader").ManualMangadexDownloader;
+const SilentDownloader = require("./mangadex-downloader").ManualMangadexDownloader;
 const downloader = new VerboseDownloader(5,{
     dir: "C:\\Manga\\Naruto"
 });
@@ -112,14 +112,14 @@ downloader.download();
 
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //with console feedback. Update the anime list after finishing the download.
-const VerboseDownloader = require("./manual-mangadex-downloader").VerboseManualMangadexDownloader;
+const VerboseDownloader = require("./mangadex-downloader").VerboseManualMangadexDownloader;
 VerboseDownloader.download(5,{
     dir: "C:\\Manga\\Naruto"
 });
 
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //no console feedback. Update the anime list after finishing the download.
-const SilentDownloader = require("./manual-mangadex-downloader").ManualMangadexDownloader;
+const SilentDownloader = require("./mangadex-downloader").ManualMangadexDownloader;
 SilentDownloader.download(5,{
     dir: "C:\\Manga\\Naruto"
 });
