@@ -12,7 +12,7 @@ class Manga {
      * @typedef MangaParamType 
      * 
      * @property {string} [name]
-     * @property {number|string} [id]
+     * @property {number} [id]
      * @property {number} [lastChapter]
      * @property {string} [lang]
      */
@@ -23,56 +23,29 @@ class Manga {
      */
     constructor({name,id,lastChapter=-1,lang="gb"}={}) {
         this.name = name;
-        // @ts-ignore
         this.id = id;
         this.lastChapter = lastChapter;
         this.lang = lang;
     }
 
-    set name(n) {
-        this._name = n;
-    }
+    /*** @param {string} n*/
+    set name(n) {this._name = n;}
 
-    /**
-     * @param {number} i
-     */
-    set id(i) {
-        // @ts-ignore
-        this._id = parseInt(i);
-    }
+    /*** @param {number} i*/
+    // @ts-ignore
+    set id(i) {this._id = parseInt(i);}
 
-    set lastChapter(chap) {
-        this._lastChapter = parseFloat(chap.toString());
-    }
+    /*** @param {number} chap*/
+    // @ts-ignore
+    set lastChapter(chap) {this._lastChapter = parseFloat(chap);}
 
-    set lang(l) {
-        this._lang = l;
-    }
+    /*** @param {string} l*/
+    set lang(l) {this._lang = l;}
 
-    /**
-     * @returns {string}
-     */
-    get name() {
-        return this._name;
-    }
-
-    /**
-     * @return {number}
-     */
-    get id() {
-        return this._id;
-    }
-
-    /**
-     * @return {number}
-     */
-    get lastChapter() {
-        return this._lastChapter;
-    }
-
-    get lang() {
-        return this._lang;
-    }
+    get name() {return this._name;}
+    get id() {return this._id;}
+    get lastChapter() {return this._lastChapter;}
+    get lang() {return this._lang;}
 
     /**
      * 
@@ -190,7 +163,7 @@ class MangaList {
 
         for(const id of Object.keys(mangaList))
             this._allManga.set(parseInt(id), new Manga({
-                id,
+                id: parseInt(id),
                 name: mangaList[id].name,
                 lastChapter: mangaList[id].lastChapter,
                 lang: mangaList[id].lang
