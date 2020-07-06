@@ -60,12 +60,18 @@ class RSS {
     }
 
     async getNewChapters() {
-        const chapters = await this._getChapters();
-        return chapters.filter(chap => chap > this._lastChapter);
+        try {
+            const chapters = await this._getChapters();
+            return chapters.filter(chap => chap > this._lastChapter);
+        }
+        catch(err) {
+            console.error(err);
+            return [];
+        }
     }
 
     async _getParsedRSS() {
-        const parser = new XMLParser();
+        const parser = new XMLParser(null);
         const xml = await get(this._url);
         const parsedXML = await parser.parseStringPromise(xml);
         return parsedXML.rss;

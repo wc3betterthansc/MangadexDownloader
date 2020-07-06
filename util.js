@@ -1,9 +1,10 @@
 const 
-    fetch = require("node-fetch"),
+    fetch = require("node-fetch").default,
     JSDOM = require("jsdom").JSDOM,
     fs = require("fs"),
     path = require("path");
 
+console.log();
 /**
  * @typedef DownloadParamsType
  * @property {string} url 

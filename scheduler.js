@@ -107,6 +107,7 @@ class Scheduler {
 
         if(startImmediately) await synchronize();
         
+        // @ts-ignore
         const job = new CronJob(this._time,async()=>await synchronize(),null,true)
             .start();
 
