@@ -97,7 +97,15 @@ class MangadexDownloader {
     get lastChapter() {return this._lastChapter;}
 
     async download() {
-        const imgUrls = await this._getUrls();
+        let imgUrls;
+        try{
+            imgUrls = await this._getUrls();
+        }
+        catch(err) {
+            console.error(err);
+            return;
+        }
+
         mkdir(this._dir);
 
         chaptersLoop: for(const chapNum of Object.keys(imgUrls)) {
@@ -150,7 +158,7 @@ class MangadexDownloader {
             return manga;
         }
         catch(err) {
-            console.error("Trouble getting mangadex manga information. Try again later.");
+            throw new Error("Trouble getting mangadex manga information. Try again later.");
         }
 
     }
@@ -165,7 +173,7 @@ class MangadexDownloader {
             return chap;
         }
         catch(err) {
-            console.error("Trouble getting mangadex chapter information. Try again later.");
+            throw new Error("Trouble getting mangadex chapter information. Try again later.");
         }
     }
 
