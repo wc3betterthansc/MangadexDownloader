@@ -121,7 +121,17 @@ class MangadexDownloader {
                     // @ts-ignore
                     await this.constructor._download({imgUrl, imgName, chapDir});
                     const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
-                    if(imgSize === 0) throw new Error(`No image was downloaded. URL ${imgUrl} does not work anymore.`);
+                    if(imgSize === 0) {
+                        const num = parseInt(chapNum);
+                        
+                        //chapNum could be the title of the chapter if the chapter does not have a specific number. Continue to the next chapter.
+                        if(isNaN(num))
+                            throw new Error(MangadexDownloader._noImageErrorMsg(imgUrl));
+                        
+                        //otherwise redownload everything from the current chapter number.
+                        return this._redownload(num,chapDir,imgUrl);
+                    }
+
                 }
                 catch(err) {
                     fs.rmdirSync(chapDir,{recursive:true});
@@ -260,11 +270,38 @@ class MangadexDownloader {
 
     /**
      * 
+     * @param {number} lastChapter
+     * @param {string} chapDir
+     * @param {string} imgUrl
+     */
+    async _redownload(lastChapter,chapDir,imgUrl) {
+        console.error(MangadexDownloader._noImageErrorMsg(imgUrl));
+        fs.rmdirSync(chapDir,{recursive:true});
+
+        this._range = this.range
+            .map((r,i)=> {
+                if(r.firstChapter < lastChapter && r.lastChapter < lastChapter)
+                    return;
+                else if(r.firstChapter <= lastChapter && r.lastChapter >= lastChapter)
+                    return {...r,firstChapter: lastChapter}
+                else return r;
+            })
+            .filter(Boolean);
+
+        await this.download();
+    }    
+
+    /**
+     * 
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
     static download(mangaId,{dir="./", firstChapter = 0, lastChapter = Infinity, range = [], lang = "gb", group = 0,noNumberAllowed = true}={}) {
         return new MangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
+    }
+
+    static _noImageErrorMsg(imgUrl) {
+        return `No image was downloaded. URL ${imgUrl} does not work anymore. Reacquiring chapters data.`;
     }
 }
 
