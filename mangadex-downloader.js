@@ -7,7 +7,7 @@ const Mangadex = require("mangadex-api"),
     ZipLocal = require("zip-local"),
     fs = require("fs"),
     path = require("path"),
-    { download, mkdir, getUniqueFilename, getValidFileName } = require("./util");
+    util = require("./util");
 
 const MAX_DOWNLOAD_TRIES = 5;
 
@@ -97,24 +97,25 @@ class MangadexDownloader {
     get lastChapter() {return this._lastChapter;}
 
     async download() {
-        let imgUrls;
+        let chapId;
         try{
-            imgUrls = await this._getUrls();
+            chapId = await this._getChapId();
         }
         catch(err) {
             console.error(err);
             return;
         }
 
-        mkdir(this._dir);
+        util.mkdir(this._dir);
 
-        chaptersLoop: for(const chapNum of Object.keys(imgUrls)) {
-            const chapName = getValidFileName(chapNum.padStart(3,"0"));
+        chaptersLoop: for(const id of chapId) {
+            const {chap,urls} = await this._getUrl(id,chapId.length);
+            const chapName = util.getValidFileName(chap.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
-            mkdir(chapDir);
+            util.mkdir(chapDir);
 
-            for(const [i,imgUrl] of imgUrls[chapNum].entries()) {
-                const imgName = (i+1).toString().padStart(2,"0") + ".png";
+            for(const [i,imgUrl] of urls.entries()) {
+                const imgName = this._getImgFilename(i);
 
                 //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
@@ -122,7 +123,7 @@ class MangadexDownloader {
                     await this.constructor._download({imgUrl, imgName, chapDir});
                     const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
                     if(imgSize === 0) {
-                        const num = parseInt(chapNum);
+                        const num = parseInt(chap);
                         
                         //chapNum could be the title of the chapter if the chapter does not have a specific number. Continue to the next chapter.
                         if(isNaN(num))
@@ -131,7 +132,6 @@ class MangadexDownloader {
                         //otherwise redownload everything from the current chapter number.
                         return this._redownload(num,chapDir,imgUrl);
                     }
-
                 }
                 catch(err) {
                     fs.rmdirSync(chapDir,{recursive:true});
@@ -151,7 +151,7 @@ class MangadexDownloader {
         await helper(1);
         async function helper(tryNumber) {
             try {
-                await download({url: imgUrl, filename: imgName, dir: chapDir});
+                await util.download({url: imgUrl, filename: imgName, dir: chapDir});
             }
             catch(err) {
                 if(tryNumber <= MAX_DOWNLOAD_TRIES) 
@@ -170,7 +170,6 @@ class MangadexDownloader {
         catch(err) {
             throw new Error("Trouble getting mangadex manga information. Try again later.");
         }
-
     }
 
     /**
@@ -187,6 +186,9 @@ class MangadexDownloader {
         }
     }
 
+    /**
+     * @return {Promise<Array<number>>}
+     */
     async _getChapId() {
         const manga = await this._getManga();
         /**
@@ -208,29 +210,34 @@ class MangadexDownloader {
         chaps = chaps.filter(chap => chap.lang_code === this._lang)
         
         //store the real first chapter and last chapter
-        this.firstChapter = parseFloat(chaps[0].chapter);
-        this.lastChapter = parseFloat(chaps[chaps.length-1].chapter);
+        if(chaps.length > 0) {
+            this.firstChapter = parseFloat(chaps[0].chapter);
+            this.lastChapter = parseFloat(chaps[chaps.length-1].chapter);
+        }
                 
         return chaps.map(chap => chap.id);
     }
 
-    async _getUrls() {
-        const chapIds = await this._getChapId();
-        const chapUrls = {}
+    /**
+     * 
+     * @param {number} id 
+     * @param {number} nbOfChapters
+     */
+    async _getUrl(id,nbOfChapters) {
+        const chap = await this._getChap(id);
+        const urls = chap.page_array;
+        let chapNumber = parseFloat(chap.chapter);
 
-        for(let id of chapIds) {
-            const chap = await this._getChap(id);
-            const urls = chap.page_array;
-            let chapNumber = parseFloat(chap.chapter);
-
-            if(isNaN(chapNumber)) {
-                if(chapIds.length === 1) chapNumber = 1;
-                // @ts-ignore
-                else chapNumber = chap.title;
-            }
-            chapUrls[chapNumber] = urls;
+        if(isNaN(chapNumber)) {
+            if(nbOfChapters === 1) chapNumber = 1;
+            // @ts-ignore
+            else chapNumber = chap.title;
         }
-        return chapUrls;
+        
+        return {
+            chap: chapNumber.toString(),
+            urls
+        }
     }
 
     /**
@@ -238,14 +245,15 @@ class MangadexDownloader {
      * @param {number|string} chapNum 
      */
     _zipChapter(chapDir,chapNum) {
-        let chapZip = path.join(this._dir,getUniqueFilename({filename: chapNum+".zip", dir:this._dir}));
+        const zipName = util.getUniqueFilename({filename: chapNum+".zip", dir:this._dir});
+        const zipPath = path.join(this._dir,zipName);
         
         ZipLocal.zip(chapDir, (err,zipped)=> {
             if(!err) {
                 zipped.compress();
-                zipped.save(chapZip,err=> {
+                zipped.save(zipPath,err=> {
                     if(!err)  {
-                        console.log(`Zipping: ${chapDir} as ${chapZip}`);
+                        console.log(`Zipping: ${chapDir} as ${zipPath}`);
                         fs.rmdirSync(chapDir,{recursive:true});
                     }
                 })
@@ -270,6 +278,14 @@ class MangadexDownloader {
 
     /**
      * 
+     * @param {number} i 
+     */
+    _getImgFilename(i) {
+        return (i+1).toString().padStart(2,"0") + ".png";
+    }
+
+    /**
+     * 
      * @param {number} lastChapter
      * @param {string} chapDir
      * @param {string} imgUrl
@@ -278,7 +294,7 @@ class MangadexDownloader {
         console.error(MangadexDownloader._noImageErrorMsg(imgUrl));
         fs.rmdirSync(chapDir,{recursive:true});
 
-        this._range = this.range
+        this._range = this._range
             .map((r,i)=> {
                 if(r.firstChapter < lastChapter && r.lastChapter < lastChapter)
                     return;
@@ -352,7 +368,7 @@ class VerboseMangadexDownloader extends MangadexDownloader {
         await helper(1);
         async function helper(tryNumber) {
             try {
-                await download({url: imgUrl, filename: imgName, dir: chapDir});
+                await util.download({url: imgUrl, filename: imgName, dir: chapDir});
                 console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
             }
             catch(err) {
