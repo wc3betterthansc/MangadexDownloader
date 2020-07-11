@@ -61,8 +61,17 @@ parser.addArgument(
     }
 );
 
+parser.addArgument(
+    ["-lg","--lang"],
+    {
+        help: "The language desired for the manga.",
+        type: "string",
+        required: false,
+    }
+);
+
 const args = parser.parseArgs();
-const {id,dir,verbose,autoUpdate,firstChapter,lastChapter} = args;
+const {id,dir,verbose,autoUpdate,firstChapter,lastChapter,lang} = args;
 let downloaderClass;
 
 if(verbose) {
@@ -75,4 +84,4 @@ else {
 }
 
 const {download} = downloaderClass;
-download(id,{dir})
+download(id,{dir,firstChapter,lastChapter,lang});

@@ -3,5 +3,4 @@ rss/
 manga/
 .vscode
 main.js
-package-lock.json
 .env
