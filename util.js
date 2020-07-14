@@ -1,10 +1,10 @@
 const 
     fetch = require("node-fetch").default,
     JSDOM = require("jsdom").JSDOM,
+    puppeteer = require("puppeteer"),
     fs = require("fs"),
     path = require("path");
 
-console.log();
 /**
  * @typedef DownloadParamsType
  * @property {string} url 
@@ -21,7 +21,22 @@ console.log();
  */
 async function getHTML(url) {
     const res = await fetch(url,undefined);
+    if(!res.ok) throw new Error(res.status.toString());
     const html = await res.text();
+    return new JSDOM(html).window.document;
+}
+
+/* This function returns a DOM Object of a web page that is served dynamically with javascript inside a promise */
+/**
+ * 
+ * @param {string} url
+ */
+async function getDynamicHTML(url) {
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(url);
+    const html = await page.content();
+    browser.close();
     return new JSDOM(html).window.document;
 }
 
@@ -31,6 +46,7 @@ async function getHTML(url) {
  */
 async function get(url) {
     const res = await fetch(url,undefined);
+    if(!res.ok) throw new Error(res.status.toString());
     return res.text();
 }
 
@@ -126,7 +142,7 @@ function listDir(dir) {
  * 
  */
 function mkdir(dir) {
-    dir = getValidFileName(dir);
+    dir = getValidFilename(dir);
 
     if(!fs.existsSync(dir)) fs.mkdirSync(dir,{recursive: true});
     return dir;
@@ -137,7 +153,8 @@ function mkdir(dir) {
  * 
  * @param {string} dir 
  */
-function getValidFileName(dir) {
+function getValidFilename(dir) {
+    dir = path.resolve(dir);
     switch(process.platform) {
         case "win32": {
             let drive = "";
@@ -154,11 +171,12 @@ function getValidFileName(dir) {
 
 module.exports = {
     getHTML,
+    getDynamicHTML,
     get,
     wait,
     download,
     getUniqueFilename,
-    getValidFileName,
+    getValidFilename,
     mkdir,
     listDir
 }

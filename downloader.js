@@ -21,7 +21,8 @@ parser.addArgument(
     {
         help: "The directory where the manga chapters will be downloaded.",
         type: "string",
-        required: false
+        required: false,
+        defaultValue: undefined
     }
 );
 
@@ -30,14 +31,15 @@ parser.addArgument(
     {
         help: "Feedback from the downloader.",
         type: Boolean,
-        action: "storeTrue"
+        action: "storeTrue",
+        defaultValue: undefined
     }
 );
 
 parser.addArgument(
     ["-a","--autoUpdate"],
     {
-        help: "If this option is selected the manga will be automatically updated.",
+        help: "If this option is selected the manga list will be automatically updated.",
         type: Boolean,
         action: "storeTrue"
     }
@@ -49,6 +51,7 @@ parser.addArgument(
         help: "The first chapter to download.",
         type: "int",
         required: false,
+        defaultValue: undefined
     }
 );
 
@@ -58,6 +61,7 @@ parser.addArgument(
         help: "The last chapter to download.",
         type: "int",
         required: false,
+        defaultValue: undefined
     }
 );
 
@@ -67,6 +71,7 @@ parser.addArgument(
         help: "The language desired for the manga.",
         type: "string",
         required: false,
+        defaultValue: undefined
     }
 );
 
@@ -84,4 +89,10 @@ else {
 }
 
 const {download} = downloaderClass;
-download(id,{dir,firstChapter,lastChapter,lang});
+
+const params = {};
+if(dir) params.dir = dir;
+if(firstChapter) params.firstChapter = firstChapter;
+if(lastChapter) params.lastChapter = lastChapter;
+if(lang) params.lang = lang;
+download(id,params);
