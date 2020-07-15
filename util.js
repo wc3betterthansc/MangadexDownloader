@@ -151,22 +151,21 @@ function mkdir(dir) {
 /**
  * return a valid file name to a file or directory path by removing illegal characters from the one passed to the function.
  * 
- * @param {string} dir 
+ * @param {string} filename 
  */
-function getValidFilename(dir) {
-    dir = path.resolve(dir);
+function getValidFilename(filename) {
     switch(process.platform) {
         case "win32": {
             let drive = "";
-            if(dir.charAt(1) === ":" && dir.charAt(2) === "\\") {
-                drive = dir.charAt(0)+":\\"
-                dir = dir.substring(3);
+            if(filename.charAt(1) === ":" && filename.charAt(2) === "\\") {
+                drive = filename.charAt(0)+":\\"
+                filename = filename.substring(3);
             }
-            dir = drive + dir.replace(/[\>\<\:\*\"\/\|\?\*]/g,"");
+            filename = drive + filename.replace(/[\>\<\:\*\"\/\|\?\*]/g,"");
             break;
         }
     }
-    return dir;
+    return filename;
 }
 
 module.exports = {
