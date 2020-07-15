@@ -118,7 +118,7 @@ class MangadexDownloader {
 
         chaptersLoop: for(const id of chapId) {
             const {chap,urls} = await this._getUrl(id,chapId.length);
-            const chapName = util.getValidFileName(chap.padStart(3,"0"));
+            const chapName = util.getValidFilename(chap.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
             util.mkdir(chapDir);
 
