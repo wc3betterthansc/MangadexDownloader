@@ -123,19 +123,19 @@ class MangadexDownloader {
             util.mkdir(chapDir);
 
             for(const [i,imgUrl] of urls.entries()) {
-                const imgName = this._getImgFilename(i);
+                const imgName = getImgFilename(i);
 
                 //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
                     // @ts-ignore
-                    await this.constructor._download({imgUrl, imgName, chapDir});
+                    await this._download({imgUrl, imgName, chapDir});
                     const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
                     if(imgSize === 0) {
                         const num = parseInt(chap);
                         
                         //chapNum could be the title of the chapter if the chapter does not have a specific number. Continue to the next chapter.
                         if(isNaN(num))
-                            throw new Error(MangadexDownloader._noImageErrorMsg(imgUrl));
+                            throw new Error(noImageErrorMsg(imgUrl));
                         
                         //otherwise redownload everything from the current chapter number.
                         return this._redownload(num,chapDir,imgUrl);
@@ -155,14 +155,15 @@ class MangadexDownloader {
      * 
      * @param {DownloadParamsType} params
      */
-    static async _download({imgUrl, imgName, chapDir}) {
+    async _download({imgUrl, imgName, chapDir}) {
         await helper(1);
         async function helper(tryNumber) {
             try {
                 await util.download({url: imgUrl, filename: imgName, dir: chapDir});
             }
             catch(err) {
-                if(tryNumber <= MAX_DOWNLOAD_TRIES) 
+                console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
+                if(tryNumber < MAX_DOWNLOAD_TRIES) 
                     await helper(++tryNumber);
                 else 
                     throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
@@ -285,20 +286,12 @@ class MangadexDownloader {
 
     /**
      * 
-     * @param {number} i 
-     */
-    _getImgFilename(i) {
-        return (i+1).toString().padStart(2,"0") + ".png";
-    }
-
-    /**
-     * 
      * @param {number} lastChapter
      * @param {string} chapDir
      * @param {string} imgUrl
      */
     async _redownload(lastChapter,chapDir,imgUrl) {
-        console.error(MangadexDownloader._noImageErrorMsg(imgUrl));
+        console.error(noImageErrorMsg(imgUrl));
         fs.rmdirSync(chapDir,{recursive:true});
 
         this._range = this._range
@@ -323,9 +316,6 @@ class MangadexDownloader {
         return new MangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
     }
 
-    static _noImageErrorMsg(imgUrl) {
-        return `No image was downloaded. URL ${imgUrl} does not work anymore. Reacquiring chapters data.`;
-    }
 }
 
 class VerboseMangadexDownloader extends MangadexDownloader {
@@ -371,21 +361,9 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * 
      * @param {DownloadParamsType} params
      */
-    static async _download({imgUrl, imgName, chapDir}) {
-        await helper(1);
-        async function helper(tryNumber) {
-            try {
-                await util.download({url: imgUrl, filename: imgName, dir: chapDir});
-                console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
-            }
-            catch(err) {
-                console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
-                if(tryNumber < MAX_DOWNLOAD_TRIES) 
-                    await helper(++tryNumber);
-                else 
-                    throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
-            }
-        }
+    async _download({imgUrl, imgName, chapDir}) {
+        await super._download({imgUrl, imgName, chapDir});
+        console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
     }
 
     /**
@@ -488,6 +466,21 @@ class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
         return new VerboseManualMangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
     }
     
+}
+
+/**
+ * @param {string} imgUrl
+ */
+function noImageErrorMsg(imgUrl) {
+    return `No image was downloaded. URL ${imgUrl} does not work anymore. Reacquiring chapters data.`;
+}
+
+/**
+ * 
+ * @param {number} i 
+ */
+function getImgFilename(i) {
+    return (i+1).toString().padStart(2,"0") + ".png";
 }
 
 module.exports = {

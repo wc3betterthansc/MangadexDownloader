@@ -1,6 +1,26 @@
-# MangadexDownloader
+# downloader.js (CLI downloader)
+**usage:**
+```bash
+#list of commands.
+node downloader.js -h
+```
+```bash
+#example: download chapters 50 to 200 of the manga with the id "5" (Naruto) 
+#in the ./manga/Naruto directory, verbose output.
+node downloader.js --id 5 -d "./manga/Naruto" -f 50 -l 200 -vb
+```
+```bash
+#download all chapters of Naruto in the cwd, verbose output.
+node downloader.js --id 5 -vb
+```
+```bash
+#download all chapters of Naruto in the cwd, autoupdate the mangalist after you download, 
+#this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
+node downloader.js --id 5 -a
+```
 
-**Usage:**
+# mangadex-downloader.js (JavaScript classes downloader)
+**usage:**
 ```javascript
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //with console feedback.
