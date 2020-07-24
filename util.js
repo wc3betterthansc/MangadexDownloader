@@ -1,5 +1,3 @@
-const { reject } = require("lodash");
-
 const 
     fetch = require("node-fetch").default,
     JSDOM = require("jsdom").JSDOM,
