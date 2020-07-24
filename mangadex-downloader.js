@@ -9,7 +9,8 @@ const Mangadex = require("mangadex-api"),
     path = require("path"),
     util = require("./util");
 
-const 
+const
+    DEFAULT_NONAME_CHAPTER = "noname",
     MAX_DOWNLOAD_TRIES = 5,
     DEFAULT_DIR = "./",
     DEFAULT_FIRST_CHAPTER = 0,
@@ -38,6 +39,7 @@ class MangadexDownloader {
      * @property {string} imgUrl 
      * @property {string} imgName 
      * @property {string} chapDir
+     * @property {string} chapter
      */
     
     /** 
@@ -117,8 +119,8 @@ class MangadexDownloader {
         util.mkdir(this._dir);
 
         chaptersLoop: for(const id of chapId) {
-            const {chap,urls} = await this._getUrl(id,chapId.length);
-            const chapName = util.getValidFilename(chap.padStart(3,"0"));
+            const {chapter,urls} = await this._getUrl(id);
+            const chapName = util.getValidFilename(chapter.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
             util.mkdir(chapDir);
 
@@ -127,19 +129,7 @@ class MangadexDownloader {
 
                 //if the download fails, delete the temporary folder storing the images then continue to the next chapter
                 try {
-                    // @ts-ignore
-                    await this._download({imgUrl, imgName, chapDir});
-                    const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
-                    if(imgSize === 0) {
-                        const num = parseInt(chap);
-                        
-                        //chapNum could be the title of the chapter if the chapter does not have a specific number. Continue to the next chapter.
-                        if(isNaN(num))
-                            throw new Error(noImageErrorMsg(imgUrl));
-                        
-                        //otherwise redownload everything from the current chapter number.
-                        return this._redownload(num,chapDir,imgUrl);
-                    }
+                    await this._download({imgUrl, imgName, chapDir,chapter});
                 }
                 catch(err) {
                     fs.rmdirSync(chapDir,{recursive:true});
@@ -155,20 +145,37 @@ class MangadexDownloader {
      * 
      * @param {DownloadParamsType} params
      */
-    async _download({imgUrl, imgName, chapDir}) {
-        await helper(1);
-        async function helper(tryNumber) {
+    async _download({imgUrl, imgName, chapDir,chapter}) {
+        /**
+         * @param {number} tryNumber
+         */
+        const helper = async tryNumber => {
             try {
                 await util.download({url: imgUrl, filename: imgName, dir: chapDir});
+
+                /* it is possible to receive empty files. This is fixed by reacquiring chapter urls and redownloading. Do not redownload no-number chapters */
+                const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
+                if(imgSize === 0) {
+                    const lastChap = parseInt(chapter);
+                    if(!isNaN(lastChap)) 
+                        return this._redownload(lastChap,chapDir,imgUrl);
+                    else throw new Error("skip");
+                }
             }
             catch(err) {
-                console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
-                if(tryNumber < MAX_DOWNLOAD_TRIES) 
-                    await helper(++tryNumber);
-                else 
-                    throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
+                if(err.message === "skip")
+                    throw new Error(`Skipping the download of current no-number chapter after failing download.`);
+
+                else {
+                    console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
+                    if(tryNumber < MAX_DOWNLOAD_TRIES) 
+                        await helper(++tryNumber);
+                    else 
+                        throw new Error(`Failed downloading ${imgUrl} after ${MAX_DOWNLOAD_TRIES} tries.`);
+                }
             }
         }
+        await helper(1);
     }
 
     async _getManga() {
@@ -187,8 +194,7 @@ class MangadexDownloader {
      */
     async _getChap(id) {
         try {
-            const chap = await Mangadex.getChapter(id);
-            return chap;
+            return await Mangadex.getChapter(id);
         }
         catch(err) {
             throw new Error("Trouble getting mangadex chapter information. Try again later.");
@@ -229,23 +235,20 @@ class MangadexDownloader {
     /**
      * 
      * @param {number} id 
-     * @param {number} nbOfChapters
      */
-    async _getUrl(id,nbOfChapters) {
+    async _getUrl(id) {
         const chap = await this._getChap(id);
-        const urls = chap.page_array;
+        let chapter,urls;
         let chapNumber = parseFloat(chap.chapter);
 
-        if(isNaN(chapNumber)) {
-            if(nbOfChapters === 1) chapNumber = 1;
-            // @ts-ignore
-            else chapNumber = chap.title;
+        switch(chap.status.toUpperCase()) {
+            case "OK": urls = chap.page_array;break;
+            case "DELAYED": urls = []; 
         }
-        
-        return {
-            chap: chapNumber.toString(),
-            urls
-        }
+
+        if(isNaN(chapNumber)) chapter = chap.title || DEFAULT_NONAME_CHAPTER;
+        else chapter = chap.chapter
+        return {chapter,urls}
     }
 
     /**
@@ -256,17 +259,7 @@ class MangadexDownloader {
         const zipName = util.getUniqueFilename({filename: chapNum+".zip", dir:this._dir});
         const zipPath = path.join(this._dir,zipName);
         
-        ZipLocal.zip(chapDir, (err,zipped)=> {
-            if(!err) {
-                zipped.compress();
-                zipped.save(zipPath,err=> {
-                    if(!err)  {
-                        console.log(`Zipping: ${chapDir} as ${zipPath}`);
-                        fs.rmdirSync(chapDir,{recursive:true});
-                    }
-                })
-            }
-        });
+        return util.zip({filePath: chapDir, zipPath, deleteFile: true});
     }
 
     /**
@@ -361,9 +354,19 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * 
      * @param {DownloadParamsType} params
      */
-    async _download({imgUrl, imgName, chapDir}) {
-        await super._download({imgUrl, imgName, chapDir});
+    async _download({imgUrl, imgName, chapDir,chapter}) {
+        await super._download({imgUrl, imgName, chapDir,chapter});
         console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
+    }
+
+    /**
+     * @param {string} chapDir
+     * @param {number|string} chapNum 
+     */
+    async _zipChapter(chapDir,chapNum) {
+        const zipParams = await super._zipChapter(chapDir,chapNum);
+        console.log(`Zipping: ${chapDir} as ${zipParams.zipPath}`);
+        return zipParams;
     }
 
     /**

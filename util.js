@@ -1,8 +1,11 @@
+const { reject } = require("lodash");
+
 const 
     fetch = require("node-fetch").default,
     JSDOM = require("jsdom").JSDOM,
     puppeteer = require("puppeteer"),
     fs = require("fs"),
+    ZipLocal = require("zip-local"),
     path = require("path");
 
 /**
@@ -168,6 +171,41 @@ function getValidFilename(filename) {
     return filename;
 }
 
+/**
+ * Zip the file "filePath" as "zipPath". If the zipping was a success, if deleteFile is true "filePath" will be deleted. 
+ * 
+ * @typedef ZipParamsType
+ * @property {string} filePath
+ * @property {string} zipPath
+ * @property {boolean} [deleteFile]
+ * 
+ * @param {ZipParamsType} param
+ * @return {Promise<ZipParamsType>}
+ */
+function zip({filePath,zipPath,deleteFile=false}) {
+    const zippedFile = new Promise((res,rej)=>{
+        ZipLocal.zip(filePath, (err,zipped)=> {
+            if(!err) {
+                zipped.compress();
+                res(zipped);
+            }
+            else rej(err);
+        });
+    });
+
+    return zippedFile.then(zipped => {
+        return new Promise((res,rej)=> {
+            zipped.save(zipPath,err=> {
+                if(!err) {
+                    if(deleteFile) fs.rmdirSync(filePath,{recursive:true});  
+                    res({filePath,zipPath,deleteFile});
+                } 
+                else rej(err);
+            });
+        });
+    });
+}
+
 module.exports = {
     getHTML,
     getDynamicHTML,
@@ -177,5 +215,6 @@ module.exports = {
     getUniqueFilename,
     getValidFilename,
     mkdir,
+    zip,
     listDir
 }

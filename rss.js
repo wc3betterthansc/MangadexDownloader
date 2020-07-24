@@ -71,7 +71,7 @@ class RSS {
     }
 
     async _getParsedRSS() {
-        const parser = new XMLParser(null);
+        const parser = new XMLParser({explicitArray: false});
         const xml = await get(this._url);
         const parsedXML = await parser.parseStringPromise(xml);
         return parsedXML.rss;
@@ -83,7 +83,7 @@ class RSS {
     async _getChapters() {
         const parsedRSS = await this._getParsedRSS();
         const regex = /Chapter ([\d\.]+)$/;
-        const titles = parsedRSS.channel[0].item.map(entry => entry.title[0]);
+        const titles = parsedRSS.channel.item.map(entry => entry.title);
         return titles
             .map(title => {
                 const match = title.match(regex);
@@ -93,7 +93,7 @@ class RSS {
     }
 
     get _url() {
-        if(!this._id)  throw new Error("Cannot get RSS without specifying the id of the content.");
+        if(!this._id) throw new Error("Cannot get RSS without specifying the id of the content.");
         const rssKey = process.env.RSS_KEY;
         return `https://mangadex.org/rss/${rssKey}/manga_id/${this._id}`;
     }
