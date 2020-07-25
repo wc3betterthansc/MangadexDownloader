@@ -4,6 +4,7 @@ const
     puppeteer = require("puppeteer"),
     fs = require("fs"),
     ZipLocal = require("zip-local"),
+    ZipExport = require("zip-local/libs/ZipExport"),
     path = require("path");
 
 /**
@@ -101,29 +102,22 @@ async function download({url, filename, dir, override=false}) {
  * @param {ParamType} param 
  */
 function getUniqueFilename({filename,dir}) {
-    const extensionIndex = filename.indexOf(".");
-    let fileNameNoExt = filename;
-    let ext;
+    const 
+        rmExtension = removeExtension(filename),
+        filenameNoExt = rmExtension.filename,
+        extension = rmExtension.extension;
 
-    //-1 : no extension
-    // 0 : file starts with 0, not an extension (.gitignore, .env, etc)
-    // length-1 : file ends with a ".", not an extension (filename.)
-    if(extensionIndex > 0 && extensionIndex !== filename.length-1 ) {
-        fileNameNoExt = filename.substring(0,extensionIndex);
-        ext = filename.substring(extensionIndex+1);
-    }
-
-    let alreadyExists,newFileNameNoExt,newFileName;
+    let alreadyExists,newFilenameNoExt,newFilename;
     let counter = 0;
 
     do {
-        newFileNameNoExt = counter ? `${fileNameNoExt}(${counter})` : fileNameNoExt;
-        newFileName = ext ? newFileNameNoExt+"."+ext : newFileNameNoExt;
-        alreadyExists = fs.existsSync(path.join(dir,newFileName));
+        newFilenameNoExt = counter ? `${filenameNoExt}(${counter})` : filenameNoExt;
+        newFilename = extension ? newFilenameNoExt+"."+extension : newFilenameNoExt;
+        alreadyExists = fs.existsSync(path.join(dir,newFilename));
         counter++;
     }while(alreadyExists);
 
-    return newFileName
+    return newFilename
 }
 
 /* returns a list of directories inside "dir". */
@@ -132,7 +126,9 @@ function getUniqueFilename({filename,dir}) {
  * @param {string} dir 
  */
 function listDir(dir) {
-    return fs.readdirSync(dir).filter(file => fs.statSync(path.join(dir,file)).isDirectory());
+    return fs
+        .readdirSync(dir)
+        .filter(file => fs.statSync(path.join(dir,file)).isDirectory());
 }
 
 
@@ -143,7 +139,7 @@ function listDir(dir) {
  * 
  */
 function mkdir(dir) {
-    const validDirPath = getValidFilename(path.resolve(dir));
+    const validDirPath = getValidFilepath(path.resolve(dir));
 
     if(!fs.existsSync(validDirPath)) fs.mkdirSync(validDirPath,{recursive: true});
     return validDirPath;
@@ -155,30 +151,56 @@ function mkdir(dir) {
  * @param {string} dir 
  */
 function rmdir(dir) {
-    const validDirPath = getValidFilename(path.resolve(dir));
+    const validDirPath = getValidFilepath(path.resolve(dir));
 
     if(fs.existsSync(validDirPath)) fs.rmdirSync(validDirPath,{recursive:true});
     return validDirPath;
 }
 
 /**
- * return a valid file name to a file or directory path by removing illegal characters from the one passed to the function.
+ * return a valid file or directory path by removing illegal characters from the one passed to the function.
  * 
- * @param {string} filename 
+ * @param {string} filepath 
  */
-function getValidFilename(filename) {
+function getValidFilepath(filepath) {
     switch(process.platform) {
         case "win32": {
             let drive = "";
-            if(filename.charAt(1) === ":" && filename.charAt(2) === "\\") {
-                drive = filename.charAt(0)+":\\"
-                filename = filename.substring(3);
+            if(filepath.charAt(1) === ":" && filepath.charAt(2) === "\\") {
+                drive = filepath.charAt(0)+":\\"
+                filepath = filepath.substring(3);
             }
-            filename = drive + filename.replace(/[\>\<\:\*\"\/\|\?\*]/g,"");
+            filepath = drive + filepath.replace(/[\>\<\:\*\"\/\|\?\*]/g,"");
             break;
         }
     }
-    return filename;
+    return filepath;
+}
+
+/**
+ * get the filename and extension separately.
+ * 
+ * @typedef RemoveExtensionType
+ * @property {string} filename
+ * @property {string} extension
+ * 
+ * @param {string} filename
+ * @return {RemoveExtensionType}
+ */
+function removeExtension(filename) {
+    let extension = "";
+    let filenameNoExt = filename;
+    const extensionIndex = filename.indexOf(".");
+
+    //-1 : no extension
+    // 0 : file starts with 0, not an extension (.gitignore, .env, etc)
+    // length-1 : file ends with a ".", not an extension (filename.)
+    if(extensionIndex > 0 && extensionIndex !== filename.length-1 ) {
+        filenameNoExt = filename.substring(0,extensionIndex);
+        extension = filename.substring(extensionIndex+1);
+    }
+
+    return {filename: filenameNoExt,extension}
 }
 
 /**
@@ -192,8 +214,11 @@ function getValidFilename(filename) {
  * @param {ZipParamsType} param
  * @return {Promise<ZipParamsType>}
  */
-function zip({filePath,zipPath,deleteFile=false}) {
-    const zippedFile = new Promise((res,rej)=>{
+async function zip({filePath,zipPath,deleteFile=false}) {
+    /**
+     * @type {ZipExport}
+     */
+    const zippedFile = await new Promise((res,rej)=>{
         ZipLocal.zip(filePath, (err,zipped)=> {
             if(!err) {
                 zipped.compress();
@@ -203,15 +228,77 @@ function zip({filePath,zipPath,deleteFile=false}) {
         });
     });
 
-    return zippedFile.then(zipped => {
-        return new Promise((res,rej)=> {
-            zipped.save(zipPath,err=> {
-                if(!err) {
-                    if(deleteFile) rmdir(filePath);  
-                    res({filePath,zipPath,deleteFile});
-                } 
-                else rej(err);
-            });
+    return new Promise((res,rej)=>{
+        zippedFile.save(zipPath,err=>{
+            if(!err) {
+                if(deleteFile) rmdir(filePath);  
+                res({filePath,zipPath,deleteFile});
+            } 
+            else rej(err);
+        });
+    });
+
+}
+
+/**
+ * Unzip the file "ZipPath" as "filePath". If the unzipping was a success, if deleteZip is true "zipPath" will be deleted. 
+ * 
+ * @typedef UnzipParamsType
+ * @property {string} zipPath
+ * @property {string} [unzipPath]
+ * @property {boolean} [deleteZip]
+ * 
+ * @param {UnzipParamsType} param
+ * @return {Promise<UnzipParamsType>}
+ */
+async function unzip({zipPath,unzipPath,deleteZip=false}) {
+    const unzipped = await _unzip(zipPath);
+
+    if(!unzipPath) {
+        zipPath = path.resolve(zipPath);
+        const zipNameNoExt = removeExtension(path.basename(zipPath)).filename;
+        const zipParentDir = path.dirname(zipPath);
+        unzipPath = path.join(zipParentDir,zipNameNoExt);
+    }
+    mkdir(unzipPath);
+
+    return new Promise((res,rej)=>{
+        unzipped.save(unzipPath,err=>{
+            if(!err) {
+                if(deleteZip) rmdir(zipPath);
+                res({zipPath,unzipPath,deleteZip});
+            }
+            else rej(err);
+        });
+    });
+}
+
+/**
+ * Unzip the file "ZipPath" in memory. If the unzipping was a success, if deleteZip is true "zipPath" will be deleted. 
+ *  
+ * @typedef UnzipMemoryParamsType
+ * @property {string} zipPath
+ * @property {boolean} [deleteZip]
+ * 
+ * @param {UnzipMemoryParamsType} param
+ * 
+ */
+async function unzipMemory({zipPath,deleteZip=false}) {
+    const unzipped = await _unzip(zipPath);
+    if(deleteZip) rmdir(zipPath);
+    return unzipped.memory();
+}
+
+/**
+ * @param {string} zipPath
+ * 
+ * @return {Promise<ZipExport>}
+ */
+function _unzip(zipPath) {
+    return new Promise((res,rej)=>{
+        ZipLocal.unzip(zipPath,(err,unzip)=>{
+            if(!err) res(unzip);
+            else rej(err);
         });
     });
 }
@@ -222,10 +309,13 @@ module.exports = {
     get,
     wait,
     download,
+    removeExtension,
     getUniqueFilename,
-    getValidFilename,
+    getValidFilepath,
     mkdir,
     rmdir,
     zip,
+    unzip,
+    unzipMemory,
     listDir
 }

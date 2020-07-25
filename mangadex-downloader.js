@@ -19,7 +19,6 @@ const
     DEFAULT_GROUP = 0,
     DEFAULT_NO_NUMBER_ALLOWED = true
 
-
 class MangadexDownloader {
     /**
      * @typedef RangeType
@@ -119,8 +118,8 @@ class MangadexDownloader {
         util.mkdir(this._dir);
 
         chaptersLoop: for(const id of chapId) {
-            const {chapter,urls} = await this._getUrl(id);
-            const chapName = util.getValidFilename(chapter.padStart(3,"0"));
+            const {chapter,urls} = await this._getChapUrls(id);
+            const chapName = util.getValidFilepath(chapter.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
             
             if(urls.length > 0) {
@@ -239,7 +238,7 @@ class MangadexDownloader {
      * 
      * @param {number} id 
      */
-    async _getUrl(id) {
+    async _getChapUrls(id) {
         const chap = await this._getChap(id);
         let chapter,urls;
         let chapNumber = parseFloat(chap.chapter);
@@ -311,7 +310,6 @@ class MangadexDownloader {
     static download(mangaId,{dir=DEFAULT_DIR,firstChapter=DEFAULT_FIRST_CHAPTER,lastChapter=DEFAULT_LAST_CHAPTER,range=[],lang=DEFAULT_LANG,group=DEFAULT_GROUP,noNumberAllowed=DEFAULT_NO_NUMBER_ALLOWED}={}) {
         return new MangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
     }
-
 }
 
 class VerboseMangadexDownloader extends MangadexDownloader {
@@ -435,7 +433,6 @@ class ManualMangadexDownloader {
     static download(mangaId,{dir=DEFAULT_DIR,firstChapter=DEFAULT_FIRST_CHAPTER,lastChapter=DEFAULT_LAST_CHAPTER,range=[],lang=DEFAULT_LANG,group=DEFAULT_GROUP,noNumberAllowed=DEFAULT_NO_NUMBER_ALLOWED}={}) {
         return new ManualMangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
     }
-
 }
 
 class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
@@ -471,7 +468,6 @@ class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
     static download(mangaId,{dir=DEFAULT_DIR,firstChapter=DEFAULT_FIRST_CHAPTER,lastChapter=DEFAULT_LAST_CHAPTER,range=[],lang=DEFAULT_LANG,group=DEFAULT_GROUP,noNumberAllowed=DEFAULT_NO_NUMBER_ALLOWED}={}) {
         return new VerboseManualMangadexDownloader(mangaId,{dir,firstChapter,lastChapter,range,lang,group,noNumberAllowed}).download();
     }
-    
 }
 
 /**
