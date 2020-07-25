@@ -137,16 +137,28 @@ function listDir(dir) {
 
 
 /**
- * create directory if it doesn't exist.
+ * create the directory "dir" if it doesn't exist.
  * 
  * @param {string} dir 
  * 
  */
 function mkdir(dir) {
-    dir = getValidFilename(dir);
+    const validDirPath = getValidFilename(path.resolve(dir));
 
-    if(!fs.existsSync(dir)) fs.mkdirSync(dir,{recursive: true});
-    return dir;
+    if(!fs.existsSync(validDirPath)) fs.mkdirSync(validDirPath,{recursive: true});
+    return validDirPath;
+}
+
+/**
+ * remove the directory "dir" if it exists.
+ * 
+ * @param {string} dir 
+ */
+function rmdir(dir) {
+    const validDirPath = getValidFilename(path.resolve(dir));
+
+    if(fs.existsSync(validDirPath)) fs.rmdirSync(validDirPath,{recursive:true});
+    return validDirPath;
 }
 
 /**
@@ -195,7 +207,7 @@ function zip({filePath,zipPath,deleteFile=false}) {
         return new Promise((res,rej)=> {
             zipped.save(zipPath,err=> {
                 if(!err) {
-                    if(deleteFile) fs.rmdirSync(filePath,{recursive:true});  
+                    if(deleteFile) rmdir(filePath);  
                     res({filePath,zipPath,deleteFile});
                 } 
                 else rej(err);
@@ -213,6 +225,7 @@ module.exports = {
     getUniqueFilename,
     getValidFilename,
     mkdir,
+    rmdir,
     zip,
     listDir
 }

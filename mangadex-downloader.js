@@ -122,22 +122,25 @@ class MangadexDownloader {
             const {chapter,urls} = await this._getUrl(id);
             const chapName = util.getValidFilename(chapter.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
-            util.mkdir(chapDir);
+            
+            if(urls.length > 0) {
+                util.mkdir(chapDir);
 
-            for(const [i,imgUrl] of urls.entries()) {
-                const imgName = getImgFilename(i);
-
-                //if the download fails, delete the temporary folder storing the images then continue to the next chapter
-                try {
-                    await this._download({imgUrl, imgName, chapDir,chapter});
+                for(const [i,imgUrl] of urls.entries()) {
+                    const imgName = getImgFilename(i);
+    
+                    //if the download fails, delete the temporary folder storing the images then continue to the next chapter
+                    try {
+                        await this._download({imgUrl, imgName, chapDir,chapter});
+                    }
+                    catch(err) {
+                        util.rmdir(chapDir);
+                        console.error(err);
+                        continue chaptersLoop;
+                    }
                 }
-                catch(err) {
-                    fs.rmdirSync(chapDir,{recursive:true});
-                    console.error(err);
-                    continue chaptersLoop;
-                }
+                this._zipChapter(chapDir,chapName);
             }
-            this._zipChapter(chapDir,chapName);
         }
     }
 
@@ -164,7 +167,7 @@ class MangadexDownloader {
             }
             catch(err) {
                 if(err.message === "skip")
-                    throw new Error(`Skipping the download of current no-number chapter after failing download.`);
+                    throw new Error("Skipping the download of current no-number chapter after failing download.");
 
                 else {
                     console.error(`Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`);
@@ -285,7 +288,7 @@ class MangadexDownloader {
      */
     async _redownload(lastChapter,chapDir,imgUrl) {
         console.error(noImageErrorMsg(imgUrl));
-        fs.rmdirSync(chapDir,{recursive:true});
+        util.rmdir(chapDir);
 
         this._range = this._range
             .map((r,i)=> {
