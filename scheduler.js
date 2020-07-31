@@ -1,26 +1,44 @@
 const
     CronJob = require("cron").CronJob,
     path = require("path"),
-    mangadexDownloader = require("./mangadex-downloader"),
-    rss = require("./rss"),
+    {MangadexDownloader,VerboseMangadexDownloader} = require("./mangadex-downloader"),
+    {RSS,VerboseRSS} = require("./rss"),
     {MangaList} = require("./manga");
 
 require("dotenv").config();
 
+const 
+    DEFAULT_TIME = "0 */2 * * *";
+
+const
+    downloaderClass = {
+        true: VerboseMangadexDownloader,
+        false: MangadexDownloader
+    },
+    rssClass = {
+        true: VerboseRSS,
+        false: RSS
+    };
+
+/**
+ * 
+ * @param {boolean} isVerbose
+ * @return {typeof MangadexDownloader}
+ */
+function getMangadexDownloaderClass(isVerbose) {
+    return downloaderClass[isVerbose];
+}
+
+/**
+ *
+ * @param {boolean} isVerbose 
+ * @return {typeof RSS}
+ */
+function getRSS(isVerbose) {
+    return rssClass[isVerbose];
+}
+
 class Scheduler {
-
-    static downloaderClass = {
-        true: mangadexDownloader.VerboseMangadexDownloader,
-        false: mangadexDownloader.MangadexDownloader
-    }
-
-    static rssClass = {
-        true: rss.VerboseRSS,
-        false: rss.RSS
-    }
-
-    static DEFAULT_TIME = "0 */2 * * *";
-
     /**
      * @typedef SchedulerParamsType
      * @property {string} [time]
@@ -29,10 +47,10 @@ class Scheduler {
      *
      * @param {SchedulerParamsType} [param] 
      */
-    constructor({time=Scheduler.DEFAULT_TIME,downloaderVerbose=false,rssVerbose=false}={}) {
+    constructor({time=DEFAULT_TIME,downloaderVerbose=false,rssVerbose=false}={}) {
         this.time = time;
-        this._MangadexDownloader = Scheduler.downloaderClass[downloaderVerbose];
-        this._RSS = Scheduler.rssClass[rssVerbose];
+        this._MangadexDownloader = getMangadexDownloaderClass(downloaderVerbose);
+        this._RSS = getRSS(rssVerbose);
         this._mangaList = new MangaList();
     }
     
@@ -43,15 +61,21 @@ class Scheduler {
         this._time = t;
     }
 
-    async _updateMangaList(newChapters) {
+    async _updateMangaList(lastChapters) {
+
         for(const manga of this._allManga.values()) {
-            const chapters = newChapters[manga.id];
-            if(chapters.length !== 0)
-                manga.lastChapter = Math.max(...chapters);
+            const lastChapter = lastChapters[manga.id];
+            if(lastChapter) manga.lastChapter = lastChapter;
         }
         this._mangaList.saveAllManga();
     }
     
+    /**
+     * return type
+     * {
+     *    [number]: [] 
+     * }
+     */
     async _getNewChapters() {
         const rssList = [];
         const newChaptersDict = {};
@@ -80,6 +104,7 @@ class Scheduler {
     async _synchronize(dir=process.env.MANGA_DIR) {
         this._allManga = this._mangaList.loadAllManga();
         const newChapters = await this._getNewChapters();
+        const lastChapters = {};
 
         for(const manga of this._allManga.values()) {
             if(newChapters[manga.id].length === 0) continue;
@@ -95,8 +120,10 @@ class Scheduler {
                     noNumberAllowed: false
                 });
             await mangaDownloader.download();
+
+            lastChapters[manga.id] = mangaDownloader.lastDownloadedChapter;
         }
-        this._updateMangaList(newChapters);
+        this._updateMangaList(lastChapters);
     }
 
     async start(startImmediately=false) {

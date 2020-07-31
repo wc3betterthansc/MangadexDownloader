@@ -28,18 +28,18 @@ class Manga {
         this.lang = lang;
     }
 
-    /*** @param {string} n*/
+    /** @param {string} n*/
     set name(n) {this._name = n;}
 
-    /*** @param {number} i*/
+    /** @param {number} i*/
     // @ts-ignore
     set id(i) {this._id = parseInt(i);}
 
-    /*** @param {number} chap*/
+    /** @param {number} chap*/
     // @ts-ignore
     set lastChapter(chap) {this._lastChapter = parseFloat(chap);}
 
-    /*** @param {string} l*/
+    /** @param {string} l*/
     set lang(l) {this._lang = l;}
 
     get name() {return this._name;}

@@ -81,10 +81,12 @@ async function download({url, filename, dir, override=false}) {
         });
         file.on("error",()=>{
             file.close();
+            console.error("File on drive error while downloading.");
             rej();
         });
         imgRes.body.on("error",()=>{
             file.close();
+            console.error("Remote file error while downloading.")
             rej();
         });
         imgRes.body.pipe(file);

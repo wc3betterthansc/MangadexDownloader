@@ -96,7 +96,7 @@ new Scheduler({time}).start();
 
 ```javascript
 { 
-  //The time used by the scheduler to check for new chapters. Uses the cron time syntaxe. Default = Scheduler.DEFAULT_TIME.
+  //The time used by the scheduler to check for new chapters. Uses the cron time syntaxe. Default = "0 */2 * * *".
   time: "0 */2 * * *",
   //If you want feedback from the downloader. Default = false.
   downloaderVerbose: true,

@@ -84,10 +84,7 @@ class MangadexDownloader {
     set noNumberAllowed(bool) {this._noNumberAllowed = bool;}
 
     /** @param {number} chap */
-    set firstChapter(chap) {this._firstChapter = chap;}
-
-    /** @param {number} chap */
-    set lastChapter(chap) {this._lastChapter = chap;}
+    set lastDownloadedChapter(chap) {this._lastDownloadedChapter = chap;}
 
     /** @param {RangeType[]} r */
     set range(r) {
@@ -102,8 +99,7 @@ class MangadexDownloader {
     get group() {return this._group;}
     get noNumberAllowed() {return this._noNumberAllowed;}
     get range() {return this._range;}
-    get firstChapter() {return this._firstChapter;}
-    get lastChapter() {return this._lastChapter;}
+    get lastDownloadedChapter() {return this._lastDownloadedChapter;}
 
     async download() {
         let chapId;
@@ -121,7 +117,7 @@ class MangadexDownloader {
             const {chapter,urls} = await this._getChapUrls(id);
             const chapName = util.getValidFilepath(chapter.padStart(3,"0"));
             const chapDir = path.join(this._dir,chapName);
-            
+
             if(urls.length > 0) {
                 util.mkdir(chapDir);
 
@@ -154,15 +150,19 @@ class MangadexDownloader {
         const helper = async tryNumber => {
             try {
                 await util.download({url: imgUrl, filename: imgName, dir: chapDir});
+                const lastChap = parseInt(chapter);
 
-                /* it is possible to receive empty files. This is fixed by reacquiring chapter urls and redownloading. Do not redownload no-number chapters */
+                /* it is possible to receive empty files. This is fixed by reacquiring chapter urls and redownloading. Do not redownload no-number chapters. */
                 const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
+                const chapIsNumber = !isNaN(lastChap);
                 if(imgSize === 0) {
-                    const lastChap = parseInt(chapter);
-                    if(!isNaN(lastChap)) 
+                    if(chapIsNumber) 
                         return this._redownload(lastChap,chapDir,imgUrl);
                     else throw new Error("skip");
                 }
+                
+                /* update the last downloaded chapter */
+                if(chapIsNumber) this.lastDownloadedChapter = lastChap;
             }
             catch(err) {
                 if(err.message === "skip")
@@ -226,11 +226,6 @@ class MangadexDownloader {
         //filter by language
         chaps = chaps.filter(chap => chap.lang_code === this._lang)
         
-        //store the real first chapter and last chapter
-        if(chaps.length > 0) {
-            this.firstChapter = parseFloat(chaps[0].chapter);
-            this.lastChapter = parseFloat(chaps[chaps.length-1].chapter);
-        }   
         return chaps.map(chap => chap.id);
     }
 
@@ -356,8 +351,10 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * @param {DownloadParamsType} params
      */
     async _download({imgUrl, imgName, chapDir,chapter}) {
+        const downloadLocation = path.join(chapDir,imgName);
+        console.log("Downloading: "+imgUrl)
         await super._download({imgUrl, imgName, chapDir,chapter});
-        console.log(`Downloaded: ${imgUrl} as ${path.join(chapDir,imgName)}`);
+        console.log("Done. Download location: "+downloadLocation);
     }
 
     /**
@@ -411,7 +408,7 @@ class ManualMangadexDownloader {
                     id: this._mangadexDownloader.mangaId,
                 });
         }
-        manga.lastChapter = this._mangadexDownloader.lastChapter;
+        manga.lastChapter = this._mangadexDownloader.lastDownloadedChapter;
         manga.saveManga();
         return manga;
     }
