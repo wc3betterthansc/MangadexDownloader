@@ -17,7 +17,7 @@ const
     DEFAULT_LAST_CHAPTER = Infinity,
     DEFAULT_LANG = "gb",
     DEFAULT_GROUP = 0,
-    DEFAULT_NO_NUMBER_ALLOWED = true
+    DEFAULT_NO_NUMBER_ALLOWED = true;
 
 class MangadexDownloader {
     /**

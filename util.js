@@ -1,5 +1,6 @@
 const 
     fetch = require("node-fetch").default,
+    fetchResponse = require("node-fetch").Response,
     JSDOM = require("jsdom").JSDOM,
     puppeteer = require("puppeteer"),
     fs = require("fs"),
@@ -13,6 +14,7 @@ const
  * @property {string} filename 
  * @property {string} dir
  * @property {boolean} [override]
+ * @property {number} [timeout]
  * 
  */
 
@@ -69,28 +71,35 @@ async function wait(dur) {
  * @param {DownloadParamsType} param
  * 
  */
-async function download({url, filename, dir, override=false}) {
+async function download({url, filename, dir, override=false, timeout=5000}) {
     if(!override) filename = getUniqueFilename({filename, dir});
 
-    const imgRes = await fetch(url, undefined);
-    return new Promise((res,rej)=>{
-        const file = fs.createWriteStream(path.join(dir,filename));
-        file.on("finish",()=>{
-            file.close();
-            res();
+    /**
+     * @type {fetchResponse}
+     */
+    const imgRes = await Promise.race([fetch(url),_timeout(timeout)]);
+
+    if(imgRes.ok) {
+        return new Promise((res,rej)=>{
+            const file = fs.createWriteStream(path.join(dir,filename));
+            file.on("finish",()=>{
+                file.close();
+                res();
+            });
+            file.on("error",()=>{
+                file.close();
+                console.error("File on drive error while downloading.");
+                rej();
+            });
+            imgRes.body.on("error",()=>{
+                file.close();
+                console.error("Remote file error while downloading.");
+                rej();
+            });
+            imgRes.body.pipe(file);
         });
-        file.on("error",()=>{
-            file.close();
-            console.error("File on drive error while downloading.");
-            rej();
-        });
-        imgRes.body.on("error",()=>{
-            file.close();
-            console.error("Remote file error while downloading.")
-            rej();
-        });
-        imgRes.body.pipe(file);
-    });
+    }
+    else throw new Error("Failed to establish connection to the server.");
 }
 
 /**
@@ -302,6 +311,19 @@ function _unzip(zipPath) {
             if(!err) res(unzip);
             else rej(err);
         });
+    });
+}
+
+/**
+ * 
+ * @param {number} time 
+ */
+async function _timeout(time) {
+    return new Promise((res,rej)=> {
+        setTimeout(()=>
+            rej(new Error("Connection time out.")),
+            time
+        );
     });
 }
 
