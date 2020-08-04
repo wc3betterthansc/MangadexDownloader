@@ -209,7 +209,7 @@ class MangadexDownloader {
     async _getChapId() {
         const manga = await this._getManga();
         /**
-         * @type {Array}
+         * @type {Array<import("mangadex-api/typings/mangadex").MangaChapter>}
          */
         let chaps = manga.chapter;
 
@@ -221,10 +221,13 @@ class MangadexDownloader {
                 chap.group_id_3 === this._group);
 
         //filter by chapter range
-        chaps = chaps.filter(chap => this._isInRange(chap.chapter));
+        chaps = chaps.filter(chap => this._isInRange(chap.chapter))
 
         //filter by language
-        chaps = chaps.filter(chap => chap.lang_code === this._lang)
+        .filter(chap => chap.lang_code === this._lang);
+
+        //remove duplicates
+        chaps = chaps.filter((chapter,index) => chaps.findIndex(c=>chapter.chapter === c.chapter) === index);
         
         return chaps.map(chap => chap.id);
     }
