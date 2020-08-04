@@ -204,7 +204,7 @@ function removeExtension(filename) {
     const extensionIndex = filename.indexOf(".");
 
     //-1 : no extension
-    // 0 : file starts with 0, not an extension (.gitignore, .env, etc)
+    // 0 : file starts with ".", not an extension (.gitignore, .env, etc)
     // length-1 : file ends with a ".", not an extension (filename.)
     if(extensionIndex > 0 && extensionIndex !== filename.length-1 ) {
         filenameNoExt = filename.substring(0,extensionIndex);
@@ -215,7 +215,7 @@ function removeExtension(filename) {
 }
 
 /**
- * Zip the file "filePath" as "zipPath". If the zipping was a success, if deleteFile is true "filePath" will be deleted. 
+ * Zip the file "filePath" as "zipPath". If the zipping was a success, if "deleteFile" is true "filePath" will be deleted. 
  * 
  * @typedef ZipParamsType
  * @property {string} filePath
@@ -252,7 +252,7 @@ async function zip({filePath,zipPath,deleteFile=false}) {
 }
 
 /**
- * Unzip the file "ZipPath" as "filePath". If the unzipping was a success, if deleteZip is true "zipPath" will be deleted. 
+ * Unzip the file "zipPath" as "filePath". If the unzipping was a success, if deleteZip is true "zipPath" will be deleted. 
  * 
  * @typedef UnzipParamsType
  * @property {string} zipPath
@@ -318,7 +318,7 @@ function _unzip(zipPath) {
  * 
  * @param {number} time 
  */
-async function _timeout(time) {
+function _timeout(time) {
     return new Promise((res,rej)=> {
         setTimeout(()=>
             rej(new Error("Connection time out.")),

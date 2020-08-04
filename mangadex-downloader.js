@@ -150,7 +150,7 @@ class MangadexDownloader {
         const helper = async tryNumber => {
             try {
                 await util.download({url: imgUrl, filename: imgName, dir: chapDir});
-                const lastChap = parseInt(chapter);
+                const lastChap = parseFloat(chapter);
 
                 /* it is possible to receive empty files. This is fixed by reacquiring chapter urls and redownloading. Do not redownload no-number chapters. */
                 const imgSize = fs.statSync(path.join(chapDir,imgName)).size;
