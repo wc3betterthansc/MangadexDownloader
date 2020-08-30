@@ -1,5 +1,4 @@
-const 
-    {get} = require("./util"),
+const { get } = require("./util"),
     XMLParser = require("xml2js").Parser,
     fs = require("fs"),
     path = require("path");
@@ -18,7 +17,7 @@ class RSS {
     /**
      * @param {RSSParamsType} [param]
      */
-    constructor({name,id,lastChapter=-1}={}) {
+    constructor({ name, id, lastChapter = -1 } = {}) {
         this.name = name;
         this.id = id;
         this.lastChapter = lastChapter;
@@ -63,15 +62,14 @@ class RSS {
         try {
             const chapters = await this._getChapters();
             return chapters.filter(chap => chap > this._lastChapter);
-        }
-        catch(err) {
-            console.error(err);
+        } catch (err) {
+            console.error(err.message);
             return [];
         }
     }
 
     async _getParsedRSS() {
-        const parser = new XMLParser({explicitArray: false});
+        const parser = new XMLParser({ explicitArray: false });
         const xml = await get(this._url);
         const parsedXML = await parser.parseStringPromise(xml);
         return parsedXML.rss;
@@ -87,13 +85,13 @@ class RSS {
         return titles
             .map(title => {
                 const match = title.match(regex);
-                if(match) return parseFloat(match[1]);
+                if (match) return parseFloat(match[1]);
             })
             .filter(chap => chap != undefined);
     }
 
     get _url() {
-        if(!this._id) throw new Error("Cannot get RSS without specifying the id of the content.");
+        if (!this._id) throw new Error("Cannot get RSS without specifying the id of the content.");
         const rssKey = process.env.RSS_KEY;
         return `https://mangadex.org/rss/${rssKey}/manga_id/${this._id}`;
     }
@@ -103,17 +101,22 @@ class VerboseRSS extends RSS {
     /**
      * @param {RSSParamsType} param 
      */
-    constructor({name,id,lastChapter=-1}={}) {
-        super({name,id,lastChapter});
+    constructor({ name, id, lastChapter = -1 } = {}) {
+        super({ name, id, lastChapter });
     }
 
     async getNewChapters() {
         const chapters = await super.getNewChapters();
         let message;
-        switch(chapters.length) {
-            case 0:  message = `No new chapters for manga ${this._name} have been found.`;break;
-            case 1:  message = `1 new chapter for manga ${this._name} has been found.`;break;
-            default: message = `${chapters.length} new chapters for manga ${this._name} have been found.`;
+        switch (chapters.length) {
+            case 0:
+                message = `No new chapters for manga ${this._name} have been found.`;
+                break;
+            case 1:
+                message = `1 new chapter for manga ${this._name} has been found.`;
+                break;
+            default:
+                message = `${chapters.length} new chapters for manga ${this._name} have been found.`;
         }
         console.log(message);
         return chapters;
