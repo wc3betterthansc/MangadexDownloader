@@ -1,3 +1,5 @@
+const { isArray } = require("lodash");
+
 const { get } = require("./util"),
     XMLParser = require("xml2js").Parser,
     fs = require("fs"),
@@ -81,7 +83,12 @@ class RSS {
     async _getChapters() {
         const parsedRSS = await this._getParsedRSS();
         const regex = /Chapter ([\d\.]+)$/;
-        const titles = parsedRSS.channel.item.map(entry => entry.title);
+        const item = parsedRSS.channel.item;
+        let titles;
+
+        if (Array.isArray(item)) titles = item.map(entry => entry.title);
+        else titles = [item.title];
+
         return titles
             .map(title => {
                 const match = title.match(regex);

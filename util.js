@@ -51,7 +51,7 @@ async function getDynamicHTML(url) {
  * 
  * @param {string} url 
  */
-async function get(url, timeout = 0) {
+async function get(url, timeout = 5000) {
     let res;
     const controller = new AbortController();
     const to = setTimeout(() => controller.abort(), timeout);
