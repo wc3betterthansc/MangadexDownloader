@@ -125,6 +125,8 @@ class MangadexDownloader {
                         continue chaptersLoop;
                     }
                 }
+
+                this._addLog(chapter);
                 this._zipChapter(chapDir, chapName);
             }
         }
@@ -152,8 +154,6 @@ class MangadexDownloader {
                     else throw NoNumberError;
                 }
 
-                /* update the last downloaded chapter */
-                if (chapIsNumber) this.lastDownloadedChapter = lastChap;
             } catch (err) {
                 if (err === NoNumberError) throw NoNumberError;
 
@@ -295,6 +295,21 @@ class MangadexDownloader {
 
     /**
      * 
+     * @param {string} chapter 
+     */
+    _addLog(chapter) {
+        const currentChapNumber = parseInt(chapter);
+        const chapIsNumber = !isNaN(currentChapNumber);
+
+        if (chapIsNumber) this.lastDownloadedChapter = currentChapNumber;
+        const lastChapter = currentChapNumber;
+
+        // @ts-ignore
+        Manga.addLog({ name: getMangaName(this.dir), id: this.mangaId, lastChapter });
+    }
+
+    /**
+     * 
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
@@ -392,13 +407,7 @@ class ManualMangadexDownloader {
         let manga = Manga.loadManga(this._mangadexDownloader.mangaId);
 
         if (!manga) {
-            let unixPath = path.normalize(this._mangadexDownloader.dir).replace(/\\/g, "/");
-
-            if (unixPath.charAt(unixPath.length - 1) === '/')
-                unixPath = unixPath.substring(0, unixPath.length - 1);
-
-            const pathArr = unixPath.split("/");
-            const name = pathArr[pathArr.length - 1];
+            const name = getMangaName(this._mangadexDownloader.dir);
             manga = new Manga({
                 name,
                 id: this._mangadexDownloader.mangaId,
@@ -485,6 +494,19 @@ function getImgFilename(i) {
  */
 function retryMessage(imgUrl, tryNumber) {
     return `Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`
+}
+
+/**
+ * 
+ * @param {string} dir 
+ */
+function getMangaName(dir) {
+    let unixPath = path.normalize(dir).replace(/\\/g, "/");
+    if (unixPath.charAt(unixPath.length - 1) === '/')
+        unixPath = unixPath.substring(0, unixPath.length - 1);
+
+    const pathArr = unixPath.split("/");
+    return pathArr[pathArr.length - 1];
 }
 
 // **** ERRORS *****
