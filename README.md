@@ -1,5 +1,11 @@
 # downloader.js (CLI downloader)
 **usage:**
+
+**Set a default manga directory:**
+1) rename .env.usage to .env
+2) replace {DEFAULT MANGA DIRECTORY HERE} with the directory of all your manga
+3) save
+
 ```bash
 #list of commands.
 node downloader.js -h
@@ -7,7 +13,7 @@ node downloader.js -h
 ```bash
 #example: download chapters 50 to 200 of the manga with the id "5" (Naruto) 
 #in the ./manga/Naruto directory, verbose output.
-node downloader.js --id 5 -d "./manga/Naruto" -f 50 -l 200 -vb
+node downloader.js --id 5 -d "./manga" -n "naruto" -f 50 -l 200 -vb
 ```
 ```bash
 #download all chapters of Naruto in the cwd, verbose output.
@@ -26,7 +32,8 @@ node downloader.js --id 5 -a
 //with console feedback.
 const Downloader = require("./mangadex-downloader").VerboseMangadexDownloader;
 const downloader = new Downloader(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 downloader.download();
 ```
@@ -38,7 +45,8 @@ downloader.download();
 //No console feedback.
 const Downloader = require("./mangadex-downloader").MangadexDownloader;
 const downloader = new Downloader(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 downloader.download();
 ```
@@ -47,8 +55,10 @@ downloader.download();
 
 ```javascript
 { 
-  //the manga download location. Default = "./"
-  dir: "C:\\Manga\\Naruto",
+  //the manga download location.
+  dir: "C:\\Manga\\",
+  //the name of the manga directory.
+  name: "Naruto",
   //The lower limit for downloading available chapters. Default = 0.
   firstChapter: 10,
   //The higher limit for downloading available chapters. Default = Infinity.
@@ -68,7 +78,8 @@ downloader.download();
 ```javascript
 const Downloader = require("./mangadex-downloader").VerboseMangadexDownloader;
 Downloader.download(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 ```
 
@@ -114,7 +125,8 @@ come with a verbose and non-verbose class:**
 //with console feedback. Update the anime list after finishing the download.
 const VerboseDownloader = require("./mangadex-downloader").VerboseManualMangadexDownloader;
 const downloader = new VerboseDownloader(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 downloader.download();
 
@@ -122,7 +134,8 @@ downloader.download();
 //no console feedback. Update the anime list after finishing the download.
 const SilentDownloader = require("./mangadex-downloader").ManualMangadexDownloader;
 const downloader = new SilentDownloader(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 downloader.download();
 ```
@@ -134,23 +147,26 @@ downloader.download();
 //with console feedback. Update the anime list after finishing the download.
 const VerboseDownloader = require("./mangadex-downloader").VerboseManualMangadexDownloader;
 VerboseDownloader.download(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 
 //Download all available chapters of the manga with the id "5" (Naruto) in the directory "C:\Manga\Naruto".
 //no console feedback. Update the anime list after finishing the download.
 const SilentDownloader = require("./mangadex-downloader").ManualMangadexDownloader;
 SilentDownloader.download(5,{
-    dir: "C:\\Manga\\Naruto"
+    dir: "C:\\Manga",
+    name: "Naruto"
 });
 ```
 
 **The Format of the JSON file used by the Scheduler and the manual downloader classes. 
 The key is the id of the manga.
-The value is an object containing the name of the manga, the last chapter downloaded and the language.:**
+The value is an object containing the name of the manga, the directory where the manga is located, the last chapter downloaded and the language.:**
 ```json
 {
   "5":{
+    "dir":"C:\\Manga",
     "name":"Naruto",
     "lastChapter":519,
     "lang":"gb"

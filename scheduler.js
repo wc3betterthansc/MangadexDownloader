@@ -5,7 +5,6 @@ const
     { RSS, VerboseRSS } = require("./rss"),
     { MangaList } = require("./manga");
 
-require("dotenv").config();
 
 const
     DEFAULT_TIME = "0 */2 * * *";
@@ -92,7 +91,7 @@ class Scheduler {
         console.log(`Finished synchronization at: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`);
     }
 
-    async _synchronize(dir = process.env.MANGA_DIR) {
+    async _synchronize() {
         this._allManga = this._mangaList.loadAllManga();
         const newChapters = await this._getNewChapters();
         const lastChapters = {};
@@ -103,13 +102,16 @@ class Scheduler {
             const
                 firstChapter = Math.min(...newChapters[manga.id]),
                 lastChapter = Math.max(...newChapters[manga.id]),
-                mangaDownloader = new this._MangadexDownloader(manga.id, {
-                    dir: path.join(dir, manga.name),
+                params = {
+                    dir: manga.dir,
+                    name: manga.name,
                     firstChapter,
                     lastChapter,
                     lang: manga.lang,
-                    noNumberAllowed: false
-                });
+                    noNumberAllowed: false,
+                };
+
+            const mangaDownloader = new this._MangadexDownloader(manga.id, params);
             await mangaDownloader.download();
 
             lastChapters[manga.id] = mangaDownloader.lastDownloadedChapter;

@@ -2,12 +2,13 @@ const { mkdir } = require("./util"),
     fs = require("fs"),
     path = require("path");
 
-const MANGA_LIST_JSON = "MangaList.json";
-const LOG = "log.txt";
-const DEFAULT_DIR = "./manga";
+const
+    MANGA_LIST_JSON = "MangaList.json",
+    LOG = "log.txt",
+    ERR = "error.txt",
+    DEFAULT_DIR = "./manga";
 
 class Manga {
-
     /**
      * @typedef MangaParamType 
      * 
@@ -15,17 +16,19 @@ class Manga {
      * @property {number} [id]
      * @property {number} [lastChapter]
      * @property {string} [lang]
+     * @property {string} [dir]
      */
 
     /**
      * 
      * @param {MangaParamType} [params]
      */
-    constructor({ name, id, lastChapter = -1, lang = "gb" } = {}) {
+    constructor({ name, id, lastChapter = -1, lang = "gb", dir } = {}) {
         this.name = name;
         this.id = id;
         this.lastChapter = lastChapter;
         this.lang = lang;
+        this.dir = dir;
     }
 
     /** @param {string} n*/
@@ -42,10 +45,14 @@ class Manga {
     /** @param {string} l*/
     set lang(l) { this._lang = l; }
 
+    /** @param {string} d*/
+    set dir(d) { this._dir = d; }
+
     get name() { return this._name; }
     get id() { return this._id; }
     get lastChapter() { return this._lastChapter; }
     get lang() { return this._lang; }
+    get dir() { return this._dir; }
 
     /**
      * 
@@ -62,8 +69,10 @@ class Manga {
         mangaList[this._id] = {
             name: this._name,
             lastChapter: this._lastChapter,
-            lang: this._lang
+            lang: this._lang,
+            dir: this._dir
         }
+
         fs.writeFileSync(mangaListJson, JSON.stringify(mangaList), { encoding: "utf-8" });
     }
 
@@ -84,15 +93,42 @@ class Manga {
         fs.writeFileSync(mangaListJson, JSON.stringify(mangaList), { encoding: "utf-8" });
     }
 
+    /**
+     * 
+     * @param {string} dir 
+     */
     addLog(dir = DEFAULT_DIR) {
         const logFile = path.join(dir, LOG);
         mkdir(dir);
 
         const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : this.lastChapter;
-        const msg = `${this.name} (${this.id}): ${chapMsg}\n`;
+        const today = new Date();
+        const timeStamp = today.toLocaleDateString() + " " + today.toLocaleTimeString();
+        const msg = `${this.id}: ${this.name} ${chapMsg} (${timeStamp})\n`;
+
         fs.appendFile(logFile, msg, err => {
             if (err) throw err;
-            console.log("log file updated.");
+            console.log(msg);
+        });
+    }
+
+    /**
+     * 
+     * @param {Error} err 
+     * @param {string} dir 
+     */
+    addErr(err, dir = DEFAULT_DIR) {
+        const errFile = path.join(dir, ERR);
+        mkdir(dir);
+
+        const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : this.lastChapter;
+        const today = new Date();
+        const timeStamp = today.toLocaleDateString() + " " + today.toLocaleTimeString();
+        const msg = `${this.id}: ${this.name} ${chapMsg} (${timeStamp}) ERR:${err.message}\n`;
+
+        fs.appendFile(errFile, msg, err => {
+            if (err) throw err;
+            console.error(msg);
         });
     }
 
@@ -111,12 +147,15 @@ class Manga {
 
         if (!mangaList[id]) return null;
 
-        return new Manga({
+        const manga = {
             id,
             name: mangaList[id].name,
             lastChapter: mangaList[id].lastChapter,
-            lang: mangaList[id].lang
-        });
+            lang: mangaList[id].lang,
+            dir: mangaList[id].dir
+        }
+
+        return new Manga(manga);
     }
 
     /**
@@ -131,6 +170,22 @@ class Manga {
             mangaObject = manga;
 
         mangaObject.addLog(dir);
+    }
+
+    /**
+     * 
+     * @param {Manga | MangaParamType} manga 
+     * @param {Error} err 
+     * @param {string} dir 
+     */
+    static addErr(manga, err, dir = DEFAULT_DIR) {
+        let mangaObject;
+        if (!(manga instanceof Manga))
+            mangaObject = new Manga(manga);
+        else
+            mangaObject = manga;
+
+        mangaObject.addErr(err, dir);
     }
 }
 
@@ -176,7 +231,8 @@ class MangaList {
             mangaList[manga._id] = {
                 name: manga._name,
                 lastChapter: manga._lastChapter,
-                lang: manga._lang
+                lang: manga._lang,
+                dir: manga._dir
             }
         }
         fs.writeFileSync(mangaListJson, JSON.stringify(mangaList), { encoding: "utf-8" });
@@ -190,13 +246,17 @@ class MangaList {
 
         const mangaList = JSON.parse(fs.readFileSync(mangaListJson, "utf-8"));
 
-        for (const id of Object.keys(mangaList))
-            this._allManga.set(parseInt(id), new Manga({
+        for (const id of Object.keys(mangaList)) {
+            const manga = {
                 id: parseInt(id),
                 name: mangaList[id].name,
                 lastChapter: mangaList[id].lastChapter,
-                lang: mangaList[id].lang
-            }));
+                lang: mangaList[id].lang,
+                dir: mangaList[id].dir
+            }
+            this._allManga.set(parseInt(id), new Manga(manga));
+        }
+
         return this._allManga;
     }
 

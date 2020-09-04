@@ -4,11 +4,11 @@ const Mangadex = require("mangadex-api").default,
     fs = require("fs"),
     path = require("path"),
     util = require("./util");
+require("dotenv").config();
 
 const
     DEFAULT_NONAME_CHAPTER = "noname",
     MAX_DOWNLOAD_TRIES = 5,
-    DEFAULT_DIR = "./",
     DEFAULT_FIRST_CHAPTER = 0,
     DEFAULT_LAST_CHAPTER = Infinity,
     DEFAULT_LANG = "gb",
@@ -23,6 +23,7 @@ class MangadexDownloader {
      * 
      * @typedef ConstructorParamsType
      * @property {string} [dir]
+     * @property {string} [name]
      * @property {number|string} [firstChapter]
      * @property {number|string} [lastChapter]
      * @property {RangeType[]} [range]
@@ -42,10 +43,11 @@ class MangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    constructor(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
         // @ts-ignore
         this.mangaId = mangaId;
         this.dir = dir;
+        this.name = name;
         this.lang = lang;
         // @ts-ignore
         this.group = group;
@@ -66,7 +68,19 @@ class MangadexDownloader {
     set mangaId(id) { this._mangaId = parseInt(id); }
 
     /** @param {string} d */
-    set dir(d) { this._dir = util.getValidFilepath(path.resolve(d)); }
+    set dir(d) {
+        if (d)
+            this._dir = util.getValidFilepath(path.resolve(d));
+        else
+            this._dir = process.env.MANGA_DIR;
+    }
+
+    /** @param {string} n */
+    set name(n) {
+        if (n)
+            this._name = util.getValidFilepath(n);
+        else throw NoNameError;
+    }
 
     /** @param {string} l */
     set lang(l) { this._lang = l; }
@@ -90,6 +104,7 @@ class MangadexDownloader {
 
     get mangaId() { return this._mangaId; }
     get dir() { return this._dir; }
+    get name() { return this._name; }
     get lang() { return this._lang; }
     get group() { return this._group; }
     get noNumberAllowed() { return this._noNumberAllowed; }
@@ -97,35 +112,38 @@ class MangadexDownloader {
     get lastDownloadedChapter() { return this._lastDownloadedChapter; }
 
     async download() {
-        let chapId;
+        /* if acquiring the chapters id is not possible then something is wrong with the mangadex servers */
         try {
-            chapId = await this._getChapId();
+            var chapId = await this._getChapId();
         } catch (err) {
             console.error(err.message);
             return;
         }
 
-        util.mkdir(this._dir);
+        const mangaDir = path.join(this._dir, this._name);
+        util.mkdir(mangaDir);
 
         chaptersLoop: for (const id of chapId) {
             const { chapter, urls } = await this._getChapUrls(id);
             const chapName = util.getValidFilepath(chapter.padStart(3, "0"));
-            const chapDir = path.join(this._dir, chapName);
+            const chapDir = path.join(mangaDir, chapName);
 
             if (urls.length > 0) {
                 util.mkdir(chapDir);
-
                 for (const [i, imgUrl] of urls.entries()) {
                     const imgName = getImgFilename(i);
+
+                    /* if the script was unable to retrieve a single chapter, the entire chapter download is scrapped. Add an error entry for this chapter. */
                     try {
                         await this._download({ imgUrl, imgName, chapDir, chapter });
                     } catch (err) {
                         util.rmdir(chapDir);
-                        console.error(err.message);
+                        this._addErr(err, chapter);
                         continue chaptersLoop;
                     }
                 }
 
+                /* chapter has been fully downloaded. add it to the log entry then zip the entire folder. */
                 this._addLog(chapter);
                 this._zipChapter(chapDir, chapName);
             }
@@ -249,8 +267,9 @@ class MangadexDownloader {
      * @param {number|string} chapNum 
      */
     _zipChapter(chapDir, chapNum) {
-        const zipName = util.getUniqueFilename({ filename: chapNum + ".zip", dir: this._dir });
-        const zipPath = path.join(this._dir, zipName);
+        const mangaDir = path.join(this._dir, this._name);
+        const zipName = util.getUniqueFilename({ filename: chapNum + ".zip", dir: mangaDir });
+        const zipPath = path.join(mangaDir, zipName);
 
         return util.zip({ filePath: chapDir, zipPath, deleteFile: true });
     }
@@ -305,7 +324,23 @@ class MangadexDownloader {
         const lastChapter = currentChapNumber;
 
         // @ts-ignore
-        Manga.addLog({ name: getMangaName(this.dir), id: this.mangaId, lastChapter });
+        Manga.addLog({ name: this.name, id: this.mangaId, lastChapter });
+    }
+
+    /**
+     * 
+     * @param {string} chapter
+     * @param {Error} err
+     */
+    _addErr(err, chapter) {
+        const currentChapNumber = parseInt(chapter);
+        const chapIsNumber = !isNaN(currentChapNumber);
+
+        if (chapIsNumber) this.lastDownloadedChapter = currentChapNumber;
+        const lastChapter = currentChapNumber;
+
+        // @ts-ignore
+        Manga.addErr({ name: this.name, id: this.mangaId, lastChapter }, err);
     }
 
     /**
@@ -313,8 +348,8 @@ class MangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    static download(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new MangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
+    static download(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new MangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
     }
 }
 
@@ -324,8 +359,8 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    constructor(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        super(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
+    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        super(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
     }
 
     async download() {
@@ -383,8 +418,8 @@ class VerboseMangadexDownloader extends MangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    static download(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new VerboseMangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
+    static download(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new VerboseMangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
     }
 }
 
@@ -394,8 +429,8 @@ class ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    constructor(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        this._mangadexDownloader = this._getMangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
+    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        this._mangadexDownloader = this._getMangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
     }
 
     async download() {
@@ -407,10 +442,10 @@ class ManualMangadexDownloader {
         let manga = Manga.loadManga(this._mangadexDownloader.mangaId);
 
         if (!manga) {
-            const name = getMangaName(this._mangadexDownloader.dir);
             manga = new Manga({
-                name,
+                name: this._mangadexDownloader.name,
                 id: this._mangadexDownloader.mangaId,
+                dir: this._mangadexDownloader.dir
             });
         }
         manga.lastChapter = this._mangadexDownloader.lastDownloadedChapter;
@@ -423,8 +458,8 @@ class ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params] 
      */
-    _getMangadexDownloader(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new MangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
+    _getMangadexDownloader(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new MangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
     }
 
     /**
@@ -432,8 +467,8 @@ class ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} params
      */
-    static download(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new ManualMangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
+    static download(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new ManualMangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
     }
 }
 
@@ -443,8 +478,8 @@ class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    constructor(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        super(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
+    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        super(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
     }
 
     _updateManga() {
@@ -458,8 +493,8 @@ class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    _getMangadexDownloader(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new VerboseMangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
+    _getMangadexDownloader(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new VerboseMangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed });
     }
 
     /**
@@ -467,8 +502,8 @@ class VerboseManualMangadexDownloader extends ManualMangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} params
      */
-    static download(mangaId, { dir = DEFAULT_DIR, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
-        return new VerboseManualMangadexDownloader(mangaId, { dir, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
+    static download(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED } = {}) {
+        return new VerboseManualMangadexDownloader(mangaId, { dir, name, firstChapter, lastChapter, range, lang, group, noNumberAllowed }).download();
     }
 }
 
@@ -496,23 +531,24 @@ function retryMessage(imgUrl, tryNumber) {
     return `Download of ${imgUrl} has failed, retrying again. Remaining tries = ${MAX_DOWNLOAD_TRIES - tryNumber}`
 }
 
-/**
- * 
- * @param {string} dir 
- */
-function getMangaName(dir) {
-    let unixPath = path.normalize(dir).replace(/\\/g, "/");
-    if (unixPath.charAt(unixPath.length - 1) === '/')
-        unixPath = unixPath.substring(0, unixPath.length - 1);
+// /**
+//  * 
+//  * @param {string} dir 
+//  */
+// function getMangaName(dir) {
+//     let unixPath = path.normalize(dir).replace(/\\/g, "/");
+//     if (unixPath.charAt(unixPath.length - 1) === '/')
+//         unixPath = unixPath.substring(0, unixPath.length - 1);
 
-    const pathArr = unixPath.split("/");
-    return pathArr[pathArr.length - 1];
-}
+//     const pathArr = unixPath.split("/");
+//     return pathArr[pathArr.length - 1];
+// }
 
 // **** ERRORS *****
 
 const
-    RangeError = { name: "RangeError", message: "The range parameter must be an Array" },
+    NoNameError = { name: "NoNameError", message: "No name for the manga series was passed." },
+    RangeError = { name: "RangeError", message: "The range parameter must be an Array." },
     NoNumberError = { name: "NoNumberError", message: "Skipping the download of current no-number chapter after failing download." },
     MangaRetrievingError = { name: "MangaRetrievingError", message: "Trouble getting mangadex manga information. Try again later." },
     ChapterRetrievingError = { name: "ChapterRetrievingError", message: "Trouble getting mangadex chapter information. Try again later." },

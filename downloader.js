@@ -8,8 +8,7 @@ const parser = new ArgumentParser({
 });
 
 parser.addArgument(
-    ["-i","--id"],
-    {
+    ["-i", "--id"], {
         help: "The id of the manga",
         type: "int",
         required: true,
@@ -17,9 +16,8 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-d","--dir"],
-    {
-        help: "The directory where the manga chapters will be downloaded.",
+    ["-d", "--dir"], {
+        help: "The directory where the manga directory will be located.",
         type: "string",
         required: false,
         defaultValue: undefined
@@ -27,8 +25,16 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-vb","--verbose"],
-    {
+    ["-n", "--name"], {
+        help: "The name of the directory where the manga chapters will be downloaded.",
+        type: "string",
+        required: true,
+        defaultValue: undefined
+    }
+)
+
+parser.addArgument(
+    ["-vb", "--verbose"], {
         help: "Feedback from the downloader.",
         type: Boolean,
         action: "storeTrue",
@@ -37,8 +43,7 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-a","--autoUpdate"],
-    {
+    ["-a", "--autoUpdate"], {
         help: "If this option is selected the manga list will be automatically updated.",
         type: Boolean,
         action: "storeTrue"
@@ -46,8 +51,7 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-f","--firstChapter"],
-    {
+    ["-f", "--firstChapter"], {
         help: "The first chapter to download.",
         type: "int",
         required: false,
@@ -56,8 +60,7 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-l","--lastChapter"],
-    {
+    ["-l", "--lastChapter"], {
         help: "The last chapter to download.",
         type: "int",
         required: false,
@@ -66,8 +69,7 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-lg","--lang"],
-    {
+    ["-lg", "--lang"], {
         help: "The language desired for the manga.",
         type: "string",
         required: false,
@@ -76,8 +78,7 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-g","--group"],
-    {
+    ["-g", "--group"], {
         help: "The id of the scanlation group desired for the manga chapters.",
         type: "int",
         required: false,
@@ -86,24 +87,23 @@ parser.addArgument(
 )
 
 const args = parser.parseArgs();
-const {id,dir,verbose,autoUpdate,firstChapter,lastChapter,lang,group} = args;
+const { id, dir, name, verbose, autoUpdate, firstChapter, lastChapter, lang, group } = args;
 let downloaderClass;
 
 /* select the right Downloader class based off verbosity and autoUpdate parameters */
-if(verbose) {
-    if(autoUpdate) downloaderClass = downloaders.VerboseManualMangadexDownloader;
+if (verbose) {
+    if (autoUpdate) downloaderClass = downloaders.VerboseManualMangadexDownloader;
     else downloaderClass = downloaders.VerboseMangadexDownloader;
-}
-else {
-    if(autoUpdate) downloaderClass = downloaders.ManualMangadexDownloader;
+} else {
+    if (autoUpdate) downloaderClass = downloaders.ManualMangadexDownloader;
     else downloaderClass = downloaders.MangadexDownloader;
 }
 
-const {download} = downloaderClass;
-const params = {dir,firstChapter,lastChapter,lang,group};
+const { download } = downloaderClass;
+const params = { dir, name, firstChapter, lastChapter, lang, group };
 
 /* replace null with undefined, default parameters only work with undefined. */
-for(let [key,val] of Object.entries(params))
-    if(val === null) params[key] = undefined;
+for (let [key, val] of Object.entries(params))
+    if (val === null) params[key] = undefined;
 
-download(id,params);
+download(id, params);
