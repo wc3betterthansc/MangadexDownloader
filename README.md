@@ -16,13 +16,13 @@ node downloader.js -h
 node downloader.js --id 5 -d "./manga" -n "naruto" -f 50 -l 200 -vb
 ```
 ```bash
-#download all chapters of Naruto in the cwd, verbose output.
-node downloader.js --id 5 -vb
+#download all chapters of Naruto in the default manga directory, verbose output.
+node downloader.js --id 5 --name "naruto" -vb
 ```
 ```bash
-#download all chapters of Naruto in the cwd, autoupdate the mangalist after you download, 
+#download all chapters of Naruto in the default manga directory, autoupdate the mangalist after you download, 
 #this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
-node downloader.js --id 5 -a
+node downloader.js --id 5 -a -n "naruto"
 ```
 
 # mangadex-downloader.js (JavaScript classes downloader)
@@ -88,7 +88,6 @@ Downloader.download(5,{
 2) login to your mangadex account, go to any manga then find the RSS icon (usually on the top right). 
 Copy the link, it should look like this: https://mangadex.org/rss/{RSS_KEY}/manga_id/5. 
 Inside .env replace {INSERT KEY HERE} with the RSS_KEY (don't use curly braces)
-3) inside .env replace {DEFAULT MANGA DIRECTORY HERE} with the absolute path to the folder that will contain all the manga
 4) save
 
 **How to start the scheduler:**
@@ -166,15 +165,17 @@ The value is an object containing the name of the manga, the directory where the
 ```json
 {
   "5":{
-    "dir":"C:\\Manga",
+
     "name":"Naruto",
     "lastChapter":519,
-    "lang":"gb"
+    "lang":"gb",
+    "dir":"C:\\Manga",
   },
   "39":{
     "name":"One Piece",
     "lastChapter":983,
-    "lang":"gb"
+    "lang":"gb",
+    "dir":"C:\\Manga",
   }
 }
 ```
