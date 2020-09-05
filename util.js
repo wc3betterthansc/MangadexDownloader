@@ -93,6 +93,9 @@ async function wait(dur) {
 async function download({ url, filename, dir, override = false, timeout = 5000 }) {
     if (!override) filename = getUniqueFilename({ filename, dir });
 
+    /**
+     * @type {fetchResponse}
+     */
     let response;
     const controller = new AbortController();
     const to = setTimeout(() => controller.abort(), timeout);

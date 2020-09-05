@@ -317,7 +317,7 @@ class MangadexDownloader {
      * @param {string} chapter 
      */
     _addLog(chapter) {
-        const currentChapNumber = parseInt(chapter);
+        const currentChapNumber = parseFloat(chapter);
         const chapIsNumber = !isNaN(currentChapNumber);
 
         if (chapIsNumber) this.lastDownloadedChapter = currentChapNumber;
@@ -333,7 +333,7 @@ class MangadexDownloader {
      * @param {Error} err
      */
     _addErr(err, chapter) {
-        const currentChapNumber = parseInt(chapter);
+        const currentChapNumber = parseFloat(chapter);
         const chapIsNumber = !isNaN(currentChapNumber);
 
         if (chapIsNumber) this.lastDownloadedChapter = currentChapNumber;
