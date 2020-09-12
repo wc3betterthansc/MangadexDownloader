@@ -1,11 +1,8 @@
-const { time } = require("console");
-
 const
     fetch = require("node-fetch").default,
     fetchResponse = require("node-fetch").Response,
     AbortController = require("abort-controller").AbortController,
     JSDOM = require("jsdom").JSDOM,
-    puppeteer = require("puppeteer"),
     fs = require("fs"),
     ZipLocal = require("zip-local"),
     ZipExport = require("zip-local/libs/ZipExport"),
@@ -27,23 +24,7 @@ const
  * @param {string} url 
  */
 async function getHTML(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw StatusCodeError(res.status);
-    const html = await res.text();
-    return new JSDOM(html).window.document;
-}
-
-/* This function returns a DOM Object of a web page that is served dynamically with javascript inside a promise */
-/**
- * 
- * @param {string} url
- */
-async function getDynamicHTML(url) {
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(url);
-    const html = await page.content();
-    browser.close();
+    const html = await get(url);
     return new JSDOM(html).window.document;
 }
 
@@ -172,6 +153,17 @@ function listDir(dir) {
     return fs
         .readdirSync(dir)
         .filter(file => fs.statSync(path.join(dir, file)).isDirectory());
+}
+
+/* returns a list of files inside "dir". */
+/**
+ * 
+ * @param {string} dir 
+ */
+function listFiles(dir) {
+    return fs
+        .readdirSync(dir)
+        .filter(file => fs.statSync(path.join(dir, file)).isFile());
 }
 
 
@@ -355,7 +347,6 @@ const
 // *******************************
 module.exports = {
     getHTML,
-    getDynamicHTML,
     get,
     wait,
     download,
@@ -367,5 +358,6 @@ module.exports = {
     zip,
     unzip,
     unzipMemory,
-    listDir
+    listDir,
+    listFiles
 }

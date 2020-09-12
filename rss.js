@@ -1,5 +1,3 @@
-const { isArray } = require("lodash");
-
 const { get } = require("./util"),
     XMLParser = require("xml2js").Parser,
     fs = require("fs"),

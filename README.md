@@ -13,16 +13,16 @@ node downloader.js -h
 ```bash
 #example: download chapters 50 to 200 of the manga with the id "5" (Naruto) 
 #in the ./manga/Naruto directory, verbose output.
-node downloader.js --id 5 -d "./manga" -n "naruto" -f 50 -l 200 -vb
+node downloader.js --id 5 -d "./manga" -n "Naruto" -f 50 -l 200 -vb
 ```
 ```bash
 #download all chapters of Naruto in the default manga directory, verbose output.
-node downloader.js --id 5 --name "naruto" -vb
+node downloader.js --id 5 --name "Naruto" -vb
 ```
 ```bash
 #download all chapters of Naruto in the default manga directory, autoupdate the mangalist after you download, 
 #this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
-node downloader.js --id 5 -a -n "naruto"
+node downloader.js --id 5 -a -n "Naruto"
 ```
 
 # mangadex-downloader.js (JavaScript classes downloader)
@@ -165,7 +165,6 @@ The value is an object containing the name of the manga, the directory where the
 ```json
 {
   "5":{
-
     "name":"Naruto",
     "lastChapter":519,
     "lang":"gb",

@@ -101,7 +101,7 @@ class Manga {
         const logFile = path.join(dir, LOG);
         mkdir(dir);
 
-        const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : this.lastChapter;
+        const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : "";
         const today = new Date();
         const timeStamp = today.toLocaleDateString() + " " + today.toLocaleTimeString();
         const msg = `${this.id}: ${this.name} ${chapMsg} (${timeStamp})\n`;
@@ -121,7 +121,7 @@ class Manga {
         const errFile = path.join(dir, ERR);
         mkdir(dir);
 
-        const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : this.lastChapter;
+        const chapMsg = !isNaN(this.lastChapter) ? `chapter ${this.lastChapter}` : "";
         const today = new Date();
         const timeStamp = today.toLocaleDateString() + " " + today.toLocaleTimeString();
         const msg = `${this.id}: ${this.name} ${chapMsg} (${timeStamp}) ERR:${err.message}\n`;
