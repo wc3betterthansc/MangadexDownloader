@@ -8,21 +8,21 @@
 
 ```bash
 #list of commands.
-node downloader.js -h
+node index.js -h
 ```
 ```bash
 #example: download chapters 50 to 200 of the manga with the id "5" (Naruto) 
 #in the ./manga/Naruto directory, verbose output.
-node downloader.js --id 5 -d "./manga" -n "Naruto" -f 50 -l 200 -vb
+node index.js --id 5 -d "./manga" -n "Naruto" -f 50 -l 200 -vb
 ```
 ```bash
-#download all chapters of Naruto in the default manga directory, verbose output.
-node downloader.js --id 5 --name "Naruto" -vb
+#download all chapters of Naruto in the default manga directory and prepend the name of the series to the chapters filename (Naruto - 001.zip for chapter 1), verbose output.
+node index.js --id 5 --name -p "Naruto" -vb
 ```
 ```bash
 #download all chapters of Naruto in the default manga directory, autoupdate the mangalist after you download, 
 #this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
-node downloader.js --id 5 -a -n "Naruto"
+node index.js --id 5 -a -n "Naruto"
 ```
 
 # mangadex-downloader.js (JavaScript classes downloader)
@@ -69,7 +69,9 @@ downloader.download();
   //Select the language of the chapters. Default = "gb" (english).
   lang: "gb",
   //Allow the download of chapters that don't have a specific number. Default = true.
-  noNumberAllowed: true
+  noNumberAllowed: true,
+  //Prepend the series name to the chapters filename. Default = false.
+  prependSeriesName: true,
 }
 ```
 

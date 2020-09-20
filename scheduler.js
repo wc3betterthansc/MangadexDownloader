@@ -43,14 +43,16 @@ class Scheduler {
      * @property {string} [time]
      * @property {boolean} [downloaderVerbose]
      * @property {boolean} [rssVerbose]
+     * @property {boolean} [prependSeriesName]
      *
      * @param {SchedulerParamsType} [param] 
      */
-    constructor({ time = DEFAULT_TIME, downloaderVerbose = false, rssVerbose = false } = {}) {
+    constructor({ time = DEFAULT_TIME, downloaderVerbose = false, rssVerbose = false, prependSeriesName = false } = {}) {
         this.time = time;
         this._MangadexDownloader = getMangadexDownloaderClass(downloaderVerbose);
         this._RSS = getRSS(rssVerbose);
         this._mangaList = new MangaList();
+        this._prependSeriesName = prependSeriesName;
     }
 
     /**
@@ -109,6 +111,7 @@ class Scheduler {
                     lastChapter,
                     lang: manga.lang,
                     noNumberAllowed: false,
+                    prependSeriesName: this._prependSeriesName
                 };
 
             const mangaDownloader = new this._MangadexDownloader(manga.id, params);

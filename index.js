@@ -20,7 +20,6 @@ parser.addArgument(
         help: "The directory where the manga directory will be located.",
         type: "string",
         required: false,
-        defaultValue: undefined
     }
 );
 
@@ -29,7 +28,6 @@ parser.addArgument(
         help: "The name of the directory where the manga chapters will be downloaded.",
         type: "string",
         required: true,
-        defaultValue: undefined
     }
 )
 
@@ -38,7 +36,7 @@ parser.addArgument(
         help: "Feedback from the downloader.",
         type: Boolean,
         action: "storeTrue",
-        defaultValue: undefined
+        required: false
     }
 );
 
@@ -46,7 +44,8 @@ parser.addArgument(
     ["-a", "--autoUpdate"], {
         help: "If this option is selected the manga list will be automatically updated.",
         type: Boolean,
-        action: "storeTrue"
+        action: "storeTrue",
+        required: false
     }
 );
 
@@ -55,7 +54,6 @@ parser.addArgument(
         help: "The first chapter to download.",
         type: "int",
         required: false,
-        defaultValue: undefined
     }
 );
 
@@ -64,7 +62,6 @@ parser.addArgument(
         help: "The last chapter to download.",
         type: "int",
         required: false,
-        defaultValue: undefined
     }
 );
 
@@ -73,7 +70,6 @@ parser.addArgument(
         help: "The language desired for the manga.",
         type: "string",
         required: false,
-        defaultValue: undefined
     }
 );
 
@@ -82,12 +78,20 @@ parser.addArgument(
         help: "The id of the scanlation group desired for the manga chapters.",
         type: "int",
         required: false,
-        defaultValue: undefined
+    }
+)
+
+parser.addArgument(
+    ["-p", "--prepend"], {
+        help: "Prepend the series name to the chapter filename.",
+        type: Boolean,
+        action: "storeTrue",
+        required: false
     }
 )
 
 const args = parser.parseArgs();
-const { id, dir, name, verbose, autoUpdate, firstChapter, lastChapter, lang, group } = args;
+const { id, dir, name, verbose, autoUpdate, firstChapter, lastChapter, lang, group, prepend } = args;
 let downloaderClass;
 
 /* select the right Downloader class based off verbosity and autoUpdate parameters */
@@ -100,7 +104,7 @@ if (verbose) {
 }
 
 const { download } = downloaderClass;
-const params = { dir, name, firstChapter, lastChapter, lang, group };
+const params = { dir, name, firstChapter, lastChapter, lang, group, prependSeriesName: prepend };
 
 /* replace null with undefined, default parameters only work with undefined. */
 for (let [key, val] of Object.entries(params))
