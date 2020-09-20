@@ -1,4 +1,4 @@
-# downloader.js (CLI downloader)
+# index.js (CLI downloader)
 **usage:**
 
 **Set a default manga directory:**
@@ -11,16 +11,22 @@
 node index.js -h
 ```
 ```bash
-#example: download chapters 50 to 200 of the manga with the id "5" (Naruto) 
-#in the ./manga/Naruto directory, verbose output.
+#example: 
+
+#(--id 5 -f 50 -l 200) download chapters 50 to 200 of the manga with the id "5" (Naruto) 
+#(-d "./manga" -n "Naruto") in the ./manga/Naruto directory
+#(-vb) verbose output.
 node index.js --id 5 -d "./manga" -n "Naruto" -f 50 -l 200 -vb
 ```
 ```bash
-#download all chapters of Naruto in the default manga directory and prepend the name of the series to the chapters filename (Naruto - 001.zip for chapter 1), verbose output.
-node index.js --id 5 --name -p "Naruto" -vb
+#(-i 5 --name "Naruto") download all chapters of Naruto in the default manga directory 
+#(-p) prepend the name of the series to the chapters filename (Naruto - 001.zip for chapter 1)
+#(-vb) verbose output.
+node index.js -i 5 --name "Naruto" -vb -p
 ```
 ```bash
-#download all chapters of Naruto in the default manga directory, autoupdate the mangalist after you download, 
+#(--id 5 -n "Naruto") download all chapters of Naruto in the default manga directory 
+#(-a) automatically update the mangalist after you download, 
 #this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
 node index.js --id 5 -a -n "Naruto"
 ```
