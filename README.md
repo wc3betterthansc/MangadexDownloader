@@ -30,6 +30,12 @@ node index.js -i 5 --name "Naruto" -vb -p
 #this is useful if you plan to use the Scheduler to automatically download chapters whenever newer ones are available.
 node index.js --id 5 -a -n "Naruto"
 ```
+```bash
+#(--id 5 -n "Naruto") download all chapters of Naruto in the default manga directory
+#(-g "1,2,3") only accept chapters from the scanlation groups with the id 1 or 2 or 3
+node index.js --id 5 -n "Naruto" -g "1,2,3"
+```
+
 
 # mangadex-downloader.js (JavaScript classes downloader)
 **usage:**
@@ -65,6 +71,9 @@ downloader.download();
   dir: "C:\\Manga\\",
   //the name of the manga directory.
   name: "Naruto",
+  //the only accepted scanlation group. undefined or [] means no restriction of groups. 
+  //This accepts a number, a numerical string, or array of numbers or numerical strings. Default = [].
+  groups: [1,"2",3],
   //The lower limit for downloading available chapters. Default = 0.
   firstChapter: 10,
   //The higher limit for downloading available chapters. Default = Infinity.

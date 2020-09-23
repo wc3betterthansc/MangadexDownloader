@@ -74,9 +74,9 @@ parser.addArgument(
 );
 
 parser.addArgument(
-    ["-g", "--group"], {
-        help: "The id of the scanlation group desired for the manga chapters.",
-        type: "int",
+    ["-g", "--groups"], {
+        help: "The id of the scanlation groups desired for the manga chapters. Multiple ids must be separated by a comma",
+        type: "string",
         required: false,
     }
 )
@@ -91,7 +91,8 @@ parser.addArgument(
 )
 
 const args = parser.parseArgs();
-const { id, dir, name, verbose, autoUpdate, firstChapter, lastChapter, lang, group, prepend } = args;
+const { id, dir, name, verbose, autoUpdate, firstChapter, lastChapter, lang, prepend } = args;
+let { groups } = args;
 let downloaderClass;
 
 /* select the right Downloader class based off verbosity and autoUpdate parameters */
@@ -103,8 +104,11 @@ if (verbose) {
     else downloaderClass = downloaders.MangadexDownloader;
 }
 
+/* convert the groups string to array */
+if (groups) groups = groups.replace(/ /g, '').split(",");
+
 const { download } = downloaderClass;
-const params = { dir, name, firstChapter, lastChapter, lang, group, prependSeriesName: prepend };
+const params = { dir, name, firstChapter, lastChapter, lang, groups, prependSeriesName: prepend };
 
 /* replace null with undefined, default parameters only work with undefined. */
 for (let [key, val] of Object.entries(params))

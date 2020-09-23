@@ -28,7 +28,7 @@ class MangadexDownloader {
      * @property {number|string} [lastChapter]
      * @property {RangeType[]} [range]
      * @property {string} [lang]
-     * @property {number|string} [group]
+     * @property {number[]|string[]|number|string} [groups]
      * @property {boolean} [noNumberAllowed]
      * @property {boolean} [prependSeriesName]
      * 
@@ -44,14 +44,14 @@ class MangadexDownloader {
      * @param {number|string} mangaId 
      * @param {ConstructorParamsType} [params]
      */
-    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, group = DEFAULT_GROUP, noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED, prependSeriesName = DEFAULT_PREPEND_SERIES_NAME } = {}) {
+    constructor(mangaId, { dir, name, firstChapter = DEFAULT_FIRST_CHAPTER, lastChapter = DEFAULT_LAST_CHAPTER, range = [], lang = DEFAULT_LANG, groups = [], noNumberAllowed = DEFAULT_NO_NUMBER_ALLOWED, prependSeriesName = DEFAULT_PREPEND_SERIES_NAME } = {}) {
 
         // @ts-ignore
         this.mangaId = mangaId;
         this.dir = dir;
         this.name = name;
         this.lang = lang;
-        this.group = group;
+        this.groups = groups;
         this.noNumberAllowed = noNumberAllowed;
         this.prependSeriesName = prependSeriesName;
 
@@ -90,10 +90,16 @@ class MangadexDownloader {
     /** @param {string} l */
     set lang(l) { this._lang = l; }
 
-    /** @param {number|string} g */
-    set group(g) {
-        // @ts-ignore
-        this._group = parseInt(g);
+    set groups(g) {
+        if (!isNaN(g))
+            g = [g];
+        if (Array.isArray(g))
+            this._groups = g.map(groupId => {
+                if (!isNaN(groupId))
+                    return parseInt(groupId);
+                else throw GroupError;
+            }).filter(Boolean);
+        else throw GroupError;
     }
 
     /** @param {boolean} bool */
@@ -116,7 +122,7 @@ class MangadexDownloader {
     get dir() { return this._dir; }
     get name() { return this._name; }
     get lang() { return this._lang; }
-    get group() { return this._group; }
+    get groups() { return this._groups; }
     get noNumberAllowed() { return this._noNumberAllowed; }
     get prependSeriesName() { return this._prependSeriesName; }
     get range() { return this._range; }
@@ -230,11 +236,11 @@ class MangadexDownloader {
         let chaps = manga.chapter;
 
         //filter by group
-        if (this._group)
+        if (this._groups.length > 0)
             chaps = chaps.filter(chap =>
-                chap.group_id === this._group ||
-                chap.group_id_2 === this._group ||
-                chap.group_id_3 === this._group);
+                this._groups.includes(chap.group_id) ||
+                this._groups.includes(chap.group_id_2) ||
+                this._groups.includes(chap.group_id_3));
 
         //filter by chapter range
         chaps = chaps.filter(chap => this._isInRange(chap.chapter))
@@ -362,7 +368,6 @@ class MangadexDownloader {
         // @ts-ignore
         Manga.addErr({ name: this.name, id: this.mangaId, lastChapter }, err);
     }
-
 
     /**
      * 
@@ -556,6 +561,7 @@ function retryMessage(imgUrl, tryNumber) {
 const
     NoNameError = { name: "NoNameError", message: "No name for the manga series was passed." },
     RangeError = { name: "RangeError", message: "The range parameter must be an Array." },
+    GroupError = { name: "GroupError", message: "The group parameter must be either a number (or numerical strings) or an array of numbers (or a combination of numbers and numerical numbers)." },
     NoNumberError = { name: "NoNumberError", message: "Skipping the download of current no-number chapter after failing download." },
     MangaRetrievingError = { name: "MangaRetrievingError", message: "Trouble getting mangadex manga information. Try again later." },
     ChapterRetrievingError = { name: "ChapterRetrievingError", message: "Trouble getting mangadex chapter information. Try again later." },
